@@ -31,14 +31,15 @@
             components = new System.ComponentModel.Container();
             listView1 = new ListView();
             timer = new System.Windows.Forms.Timer(components);
+            systemInfoPanel1 = new WinFormsTest.Utils.SystemInfoPanel();
             SuspendLayout();
             // 
             // listView1
             // 
-            listView1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            listView1.Location = new Point(12, 66);
+            listView1.Dock = DockStyle.Fill;
+            listView1.Location = new Point(0, 60);
             listView1.Name = "listView1";
-            listView1.Size = new Size(776, 372);
+            listView1.Size = new Size(800, 390);
             listView1.TabIndex = 0;
             listView1.UseCompatibleStateImageBehavior = false;
             // 
@@ -48,12 +49,21 @@
             timer.Interval = 1000;
             timer.Tick += timer_Tick;
             // 
+            // systemInfoPanel1
+            // 
+            systemInfoPanel1.Dock = DockStyle.Top;
+            systemInfoPanel1.Location = new Point(0, 0);
+            systemInfoPanel1.Name = "systemInfoPanel1";
+            systemInfoPanel1.Size = new Size(800, 60);
+            systemInfoPanel1.TabIndex = 1;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
             Controls.Add(listView1);
+            Controls.Add(systemInfoPanel1);
             Name = "Form1";
             Text = "Form1";
             ResumeLayout(false);
@@ -63,5 +73,6 @@
 
         private ListView listView1;
         private System.Windows.Forms.Timer timer;
+        private Utils.SystemInfoPanel systemInfoPanel1;
     }
 }

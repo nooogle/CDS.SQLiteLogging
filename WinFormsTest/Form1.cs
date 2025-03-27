@@ -27,7 +27,7 @@ namespace WinFormsTest
 
             logger.DeleteAll();
 
-            Text = $"Log folder: {logFolder}";
+            Text = Application.ProductName + " " + Application.ProductVersion + ", log folder [" + logFolder;
         }
 
         private void timer_Tick(object sender, EventArgs e)

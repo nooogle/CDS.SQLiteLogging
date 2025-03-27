@@ -5,7 +5,26 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageIcon>log-file.png</PackageIcon>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
+    <Title>SQLite logging</Title>
+    <Description>Library for logging using an SQlite backend</Description>
+    <Authors>Jon Shadforth</Authors>
+    <Company>Carpe Diem Systems</Company>
+    <Copyright>Copyright (c) 2025 Carpe Diem Systems</Copyright>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="log-file.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="readme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <!-- Common packages for all target frameworks -->
   <ItemGroup>
