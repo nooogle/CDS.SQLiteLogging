@@ -1,7 +1,7 @@
 using FluentAssertions;
-using SqliteLogger.Tests.TestSupport;
+using CDS.SQLiteLogging.Tests.TestSupport;
 
-namespace SqliteLogger.Tests;
+namespace CDS.SQLiteLogging.Tests;
 
 /// <summary>
 /// Unit tests for the LogWriter class.

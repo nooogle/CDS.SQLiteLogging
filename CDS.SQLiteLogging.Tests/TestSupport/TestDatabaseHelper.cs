@@ -1,4 +1,4 @@
-namespace SqliteLogger.Tests.TestSupport;
+namespace CDS.SQLiteLogging.Tests.TestSupport;
 
 
 /// <summary>

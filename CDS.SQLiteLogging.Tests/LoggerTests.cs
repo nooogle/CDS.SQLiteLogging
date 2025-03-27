@@ -1,7 +1,7 @@
+using CDS.SQLiteLogging.Tests.TestSupport;
 using FluentAssertions;
-using SqliteLogger.Tests.TestSupport;
 
-namespace SqliteLogger.Tests;
+namespace CDS.SQLiteLogging.Tests;
 
 /// <summary>
 /// Unit tests for the Logger class.

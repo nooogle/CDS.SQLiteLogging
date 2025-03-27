@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SqliteLogger\SqliteLogger.csproj" />
+    <ProjectReference Include="..\CDS.SQLiteLogging\CDS.SQLiteLogging.csproj" />
   </ItemGroup>
 
   <ItemGroup>

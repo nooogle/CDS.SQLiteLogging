@@ -1,8 +1,8 @@
 using FluentAssertions;
-using SqliteLogger.Tests.TestSupport;
+using CDS.SQLiteLogging.Tests.TestSupport;
 using System.Reflection;
 
-namespace SqliteLogger.Tests;
+namespace CDS.SQLiteLogging.Tests;
 
 /// <summary>
 /// Unit tests for the LogHousekeeper class.
