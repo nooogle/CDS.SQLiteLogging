@@ -31,7 +31,13 @@ public class SQLiteLoggerProvider : ILoggerProvider
             batchingOptions: new BatchingOptions(), // todo allow custom options
             houseKeepingOptions: new HouseKeepingOptions()); // todo allow custom options
 
-        var msSQLiteLogger = new MSSQLiteLogger(categoryName: categoryName, logger: sqliteLogger);
+        var scopeProvider = new LoggerExternalScopeProvider();
+
+        var msSQLiteLogger = new MSSQLiteLogger(
+            categoryName: categoryName, 
+            logger: sqliteLogger, 
+            scopeProvider: scopeProvider);
+
         return msSQLiteLogger;
     }
 

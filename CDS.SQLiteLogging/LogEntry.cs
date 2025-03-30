@@ -11,7 +11,7 @@ public class LogEntry : ILogEntry
     /// <summary>
     /// Increment this value every time this class is modified.
     /// </summary>
-    public static int Version { get; } = 7;
+    public static int Version { get; } = 8;
 
 
     private Dictionary<string, object> properties = null;
@@ -77,6 +77,9 @@ public class LogEntry : ILogEntry
     public string ExceptionJson { get; set; }
 
 
+    public string? ScopesJson { get; set; }
+
+
     public LogEntry()
     {
         Timestamp = DateTimeOffset.Now;
@@ -91,7 +94,8 @@ public class LogEntry : ILogEntry
         string eventName,
         string messageTemplate,
         IReadOnlyDictionary<string, object>? properties,
-        Exception? ex = null)
+        Exception? ex,
+        string? scopesJson)
     {
         Timestamp = timeStamp;
         Category = category;
@@ -102,6 +106,9 @@ public class LogEntry : ILogEntry
         MessageTemplate = messageTemplate;
         Properties = properties;
         ExceptionJson = ExceptionSerializer.ToJson(ex);
+        ScopesJson = scopesJson;
+
+        RenderedMessage = GetFormattedMsg();
     }
 
 

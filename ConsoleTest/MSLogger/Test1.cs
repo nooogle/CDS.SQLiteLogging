@@ -23,12 +23,11 @@ static class Test1
             {
                 builder.ClearProviders();
                 builder.AddProvider(sqliteLoggerProvider);
+                builder.AddConsole();                       // stdout/terminal
+                builder.AddDebug();
                 builder.SetMinimumLevel(LogLevel.Debug);
             })
-            .BuildServiceProvider(new ServiceProviderOptions
-            {
-                ValidateScopes = true // enables tracking for disposal               
-            });
+            .BuildServiceProvider();
 
         try
         {
@@ -37,27 +36,22 @@ static class Test1
             var logger = loggerFactory.CreateLogger("My_Category");
 
             // Log some messages
-            logger.LogInformation("This is an information message.");
-            logger.LogWarning("This is a warning message.");
-            logger.LogError("This is an error message.");
-            logger.LogCritical("Camera {cameraName} is offline", "Front Door");
+            logger.LogInformation("Test started");
 
-            // Log using 2 levels of scope
-            using (logger.BeginScope("Scope 1"))
+            // Log a simulated bread production system
+            var random = new Random();
+            foreach (var batch in new[] { "White1234", "WholeMeal66" })
             {
-                logger.LogInformation("This is an information message.");
-                logger.LogWarning("This is a warning message.");
-                logger.LogError("This is an error message.");
-                logger.LogCritical("Camera {cameraName} is offline", "Front Door");
+                using var loafScope = logger.BeginScope("White loaf batch {batch}", batch);
 
-                using (logger.BeginScope("Scope 2"))
+                for (int loafIndex = 0; loafIndex < 3; loafIndex++)
                 {
-                    logger.LogInformation("This is an information message.");
-                    logger.LogWarning("This is a warning message.");
-                    logger.LogError("This is an error message.");
-                    logger.LogCritical("Camera {cameraName} is offline", "Front Door");
+                    using var scope = logger.BeginScope($"Loaf {loafIndex}");
+
+                    logger.LogInformation("Mixing {flour_g} g flour and {water_g} g water", random.Next(900, 1100), random.Next(650, 750));
+                    logger.LogInformation("Baking loaf for {bake_time} minutes", random.Next(25, 35));
                 }
-            }
+            }        
         }
         finally
         {

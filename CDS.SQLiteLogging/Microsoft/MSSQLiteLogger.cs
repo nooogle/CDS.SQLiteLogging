@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace CDS.SQLiteLogging.Microsoft;
 
@@ -6,11 +7,13 @@ public class MSSQLiteLogger : ILogger, IDisposable
 {
     private readonly string categoryName;
     private readonly SQLiteLogger<LogEntry> logger;
+    private readonly IExternalScopeProvider scopeProvider = new LoggerExternalScopeProvider();
 
-    public MSSQLiteLogger(string categoryName, SQLiteLogger<LogEntry> logger)
+    public MSSQLiteLogger(string categoryName, SQLiteLogger<LogEntry> logger, IExternalScopeProvider scopeProvider)
     {
         this.categoryName = categoryName;
         this.logger = logger;
+        this.scopeProvider = scopeProvider;
     }
 
     public void Dispose()
@@ -19,7 +22,10 @@ public class MSSQLiteLogger : ILogger, IDisposable
         logger.Dispose();
     }
 
-    public IDisposable BeginScope<TState>(TState state) => new LoggerScope(state);
+    public IDisposable BeginScope<TState>(TState state)
+    {
+        return scopeProvider.Push(state);
+    }
 
     public bool IsEnabled(LogLevel logLevel) => true;
 
@@ -30,6 +36,9 @@ public class MSSQLiteLogger : ILogger, IDisposable
             return;
         }
 
+        // Gather scope information if present
+        string scopesJson = GetScopesJson();
+
         var logEntry = new LogEntry(
             timeStamp: DateTimeOffset.Now,
             category: categoryName,
@@ -38,7 +47,8 @@ public class MSSQLiteLogger : ILogger, IDisposable
             eventName: eventId.Name,
             messageTemplate: ExtractTemplate(state) ?? formatter(state, exception),
             properties: ExtractStructuredParams(state),
-            ex: exception);
+            ex: exception,
+            scopesJson: scopesJson);
 
         logger.Add(logEntry);
     }
@@ -69,4 +79,40 @@ public class MSSQLiteLogger : ILogger, IDisposable
 
         return null;
     }
+
+
+    private string? GetScopesJson()
+    {
+        var flattened = new Dictionary<string, object>();
+        int unnamedScopeCount = 0;
+
+        scopeProvider.ForEachScope((scope, state) =>
+        {
+            switch (scope)
+            {
+                case IEnumerable<KeyValuePair<string, object>> kvps:
+                    foreach (var kvp in kvps)
+                    {
+                        if (kvp.Key != "{OriginalFormat}" && !state.ContainsKey(kvp.Key))
+                        {
+                            state[kvp.Key] = kvp.Value;
+                        }
+                    }
+                    break;
+
+                case string str:
+                    state[$"scope_{unnamedScopeCount++}"] = str;
+                    break;
+
+                default:
+                    state[$"scope_{unnamedScopeCount++}"] = scope?.ToString() ?? "(null)";
+                    break;
+            }
+        }, flattened);
+
+        return flattened.Count == 0
+            ? null
+            : JsonConvert.SerializeObject(flattened);
+    }
+
 }
