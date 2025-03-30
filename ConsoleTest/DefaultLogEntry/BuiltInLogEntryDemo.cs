@@ -1,6 +1,7 @@
 using CDS.SQLiteLogging;
+using ConsoleTest.CustomLogEntry;
 
-namespace ConsoleTest;
+namespace ConsoleTest.DefaultLogEntry;
 
 /// <summary>
 /// Contains ad-hoc tests for the SQLite Logger.
@@ -21,7 +22,7 @@ static class BuiltInLogEntryDemo
         Console.WriteLine($"Using log folder: {folder}");
 
         // Create a new instance of the SQLite Logger class
-        using var logger = new Logger<LogEntry>(
+        using var logger = new SQLiteLogger<LogEntry>(
             folder,
             schemaVersion: LogEntry.Version,
             new BatchingOptions(),
@@ -30,11 +31,25 @@ static class BuiltInLogEntryDemo
         // Clear existing entries (optional)
         int deletedCount = logger.DeleteAll();
         Console.WriteLine($"Deleted {deletedCount} existing entries.");
+        Console.WriteLine("\nAdding log entries...");
 
-        // Add some log entries
+        // Add the simplest log entry possible!
         logger.AddInformation("This is an information message.");
+
+        // Add structured log entries
         logger.AddInformation("This is a structured message. Person {Name} has age {Age}.", new("Name", "Alice"), new("Age", 25));
         logger.AddInformation("This is a structured message. Person {Name} has age {Age}.", new("Name", "Jon"), new("Age", 21));
+
+        // Log an exception
+        try
+        {
+            CreateException();
+        }
+        catch (Exception ex) when (logger != null)
+        {
+            logger.AddException(ex, "An exception occurred.");
+        }
+
 
         // Get and display all entries
         var allEntries = logger.GetAllEntries();
@@ -51,5 +66,32 @@ static class BuiltInLogEntryDemo
         {
             Console.WriteLine($"[{entry.Timestamp:yyyy-MM-dd HH:mm:ss}] [{entry.Level}] [{entry.GetFormattedMsg()}]");
         }
+    }
+
+
+    /// <summary>
+    /// Creates an exception with an inner exception.
+    /// </summary>
+    private static Exception? CreateException()
+    {
+        try
+        {
+            CreateInnerException();
+        }
+        catch(Exception ex)
+        {
+            throw new InvalidOperationException("This is a demo exception!", ex);
+        }
+
+        return null;
+    }
+
+
+    /// <summary>
+    /// Creates an inner exception.
+    /// </summary>
+    private static void CreateInnerException()
+    {
+        throw new NotImplementedException("This is another demo exception");
     }
 }

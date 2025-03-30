@@ -1,7 +1,8 @@
 using CDS.SQLiteLogging;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
-namespace ConsoleTest;
+namespace ConsoleTest.CustomLogEntry;
 
 /// <summary>
 /// Contains a test for adding a burst of log entries.
@@ -49,7 +50,7 @@ static class BurstLogEntriesTest
         Console.WriteLine($"Using log folder: {folder}");
 
         // Create a new instance of the SQLite Logger class
-        using var logger = new Logger<MyLogEntry>(
+        using var logger = new SQLiteLogger<MyLogEntry>(
             folder,
             schemaVersion: MyLogEntry.Version,
             batchingOptions,
@@ -82,9 +83,9 @@ static class BurstLogEntriesTest
                 LineIndex = i,
                 BatchId = "BurstTestBatch",
                 Sender = "BurstLogEntriesTest",
-                Message = "Image with illumination {illumination} has result {result}.",
+                MessageTemplate = "Image with illumination {illumination} has result {result}.",
 
-                MsgParams = new Dictionary<string, object>
+                Properties = new Dictionary<string, object>
                 {
                     ["illumination"] = MsgParamsGen.GetIllumination(),
                     ["result"] = MsgParamsGen.GetResult(),
@@ -121,9 +122,9 @@ static class BurstLogEntriesTest
         Console.WriteLine($"Average rate: {addedCount / stopwatch.Elapsed.TotalSeconds:F2} entries/sec.");
 
         // Let user know if any entries were discarded
-        if(logger.DiscardedEntries > 0)
+        if(logger.DiscardedEntriesCount > 0)
         {
-            Console.WriteLine($"*** {logger.DiscardedEntries} entries were discarded due to the cache being full!");
+            Console.WriteLine($"*** {logger.DiscardedEntriesCount} entries were discarded due to the cache being full!");
         }
 
         // Get the size of the database file in MB

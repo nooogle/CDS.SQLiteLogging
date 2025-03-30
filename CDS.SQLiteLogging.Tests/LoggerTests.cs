@@ -1,5 +1,6 @@
 using CDS.SQLiteLogging.Tests.TestSupport;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 
 namespace CDS.SQLiteLogging.Tests;
 
@@ -11,7 +12,7 @@ public class LoggerTests
 {
     private string _testFolder;
     private ConnectionManager connectionManager;
-    private Logger<TestLogEntry> logger;
+    private SQLiteLogger<TestLogEntry> logger;
 
     /// <summary>
     /// Initializes the test environment.
@@ -21,7 +22,7 @@ public class LoggerTests
     {
         _testFolder = TestDatabaseHelper.GetTemporaryDatabaseFolder();
         connectionManager = new ConnectionManager(_testFolder, schemaVersion: TestLogEntry.Version);
-        logger = new Logger<TestLogEntry>(_testFolder, schemaVersion: TestLogEntry.Version);
+        logger = new SQLiteLogger<TestLogEntry>(_testFolder, schemaVersion: TestLogEntry.Version);
     }
 
     /// <summary>
@@ -118,7 +119,7 @@ public class LoggerTests
             Timestamp = DateTimeOffset.Now,
             Level = LogLevel.Information,
             Sender = "LoggerTests",
-            Message = message,
+            MessageTemplate = message,
             Details = "Test Details"
         };
     }

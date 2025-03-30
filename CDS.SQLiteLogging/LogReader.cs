@@ -133,7 +133,7 @@ public class LogReader<TLogEntry> where TLogEntry : ILogEntry, new()
     {
         object value = reader[prop.Name];
 
-        if (prop.Name.Equals(nameof(ILogEntry.MsgParams), StringComparison.OrdinalIgnoreCase))
+        if (prop.Name.Equals(nameof(ILogEntry.Properties), StringComparison.OrdinalIgnoreCase))
         {
             entry.DeserializeMsgParams((string)value);
         }

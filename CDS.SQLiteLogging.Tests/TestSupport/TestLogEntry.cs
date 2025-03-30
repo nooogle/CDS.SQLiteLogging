@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 namespace CDS.SQLiteLogging.Tests.TestSupport;
 
 /// <summary>
@@ -12,10 +14,16 @@ public class TestLogEntry : ILogEntry
     /// </summary>
     public static int Version { get; } = 2;
 
-    public int Id
+    public int DbId
     {
-        get => logEntry.Id;
-        set => logEntry.Id = value;
+        get => logEntry.DbId;
+        set => logEntry.DbId = value;
+    }
+
+    public EventId EventId
+    {
+        get => logEntry.EventId;
+        set => logEntry.EventId = value;
     }
 
     public DateTimeOffset Timestamp
@@ -41,16 +49,16 @@ public class TestLogEntry : ILogEntry
     /// </summary>
     public string Details { get; set; } = string.Empty;
 
-    public string Message
+    public string MessageTemplate
     {
-        get => logEntry.Message;
-        set => logEntry.Message = value;
+        get => logEntry.MessageTemplate;
+        set => logEntry.MessageTemplate = value;
     }
 
-    public IReadOnlyDictionary<string, object> MsgParams
+    public IReadOnlyDictionary<string, object> Properties
     {
-        get => logEntry.MsgParams;
-        set => logEntry.MsgParams = value.ToDictionary(kv => kv.Key, kv => kv.Value);
+        get => logEntry.Properties;
+        set => logEntry.Properties = value.ToDictionary(kv => kv.Key, kv => kv.Value);
     }
 
     public string GetFormattedMsg()

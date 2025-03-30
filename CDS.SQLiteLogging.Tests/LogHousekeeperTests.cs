@@ -1,6 +1,7 @@
 using FluentAssertions;
 using CDS.SQLiteLogging.Tests.TestSupport;
 using System.Reflection;
+using Microsoft.Extensions.Logging;
 
 namespace CDS.SQLiteLogging.Tests;
 
@@ -126,9 +127,9 @@ public class LogHousekeeperTests
         var reader = new LogReader<TestLogEntry>(_connectionManager, _tableName);
         var remainingEntries = await reader.GetAllEntriesAsync();
         remainingEntries.Should().HaveCount(2);
-        remainingEntries.Should().Contain(e => e.Message == "Recent Entry");
-        remainingEntries.Should().Contain(e => e.Message == "New Entry");
-        remainingEntries.Should().NotContain(e => e.Message == "Old Entry");
+        remainingEntries.Should().Contain(e => e.MessageTemplate == "Recent Entry");
+        remainingEntries.Should().Contain(e => e.MessageTemplate == "New Entry");
+        remainingEntries.Should().NotContain(e => e.MessageTemplate == "Old Entry");
     }
 
     /// <summary>
@@ -156,9 +157,9 @@ public class LogHousekeeperTests
         var reader = new LogReader<TestLogEntry>(_connectionManager, _tableName);
         var remainingEntries = reader.GetAllEntries();
         remainingEntries.Should().HaveCount(2);
-        remainingEntries.Should().Contain(e => e.Message == "Recent Entry");
-        remainingEntries.Should().Contain(e => e.Message == "New Entry");
-        remainingEntries.Should().NotContain(e => e.Message == "Old Entry");
+        remainingEntries.Should().Contain(e => e.MessageTemplate == "Recent Entry");
+        remainingEntries.Should().Contain(e => e.MessageTemplate == "New Entry");
+        remainingEntries.Should().NotContain(e => e.MessageTemplate == "Old Entry");
     }
 
     /// <summary>
@@ -266,7 +267,7 @@ public class LogHousekeeperTests
             Timestamp = timestamp ?? DateTimeOffset.UtcNow,
             Level = LogLevel.Information,
             Sender = "LogHousekeeperTests",
-            Message = message,
+            MessageTemplate = message,
             Details = "Test Details"
         };
     }

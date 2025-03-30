@@ -1,9 +1,11 @@
 
+using Microsoft.Extensions.Logging;
+
 namespace WinFormsTest
 {
     public partial class Form1 : Form
     {
-        private CDS.SQLiteLogging.Logger<MyLogEntry> logger;
+        private CDS.SQLiteLogging.SQLiteLogger<MyLogEntry> logger;
         private int nextLineIndex = 1;
 
 
@@ -19,7 +21,7 @@ namespace WinFormsTest
 
             var logFolder = LogFolderManager.GetLogFolder();
 
-            logger = new CDS.SQLiteLogging.Logger<MyLogEntry>(
+            logger = new CDS.SQLiteLogging.SQLiteLogger<MyLogEntry>(
                 folder: logFolder,
                 schemaVersion: MyLogEntry.Version,
                 new CDS.SQLiteLogging.BatchingOptions(),
@@ -35,11 +37,11 @@ namespace WinFormsTest
             var logEntry = new MyLogEntry()
             {
                 Timestamp = DateTimeOffset.Now,
-                Level = CDS.SQLiteLogging.LogLevel.Information,
+                Level = LogLevel.Information,
                 LineIndex = nextLineIndex++,
                 BatchNumber = "Test",
                 Sender = nameof(Form1),
-                Message = "Timer tick",
+                MessageTemplate = "Timer tick",
             };
 
             logger.Add(logEntry);

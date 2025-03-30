@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace CDS.SQLiteLogging;
@@ -10,10 +11,10 @@ public class LogEntry : ILogEntry
     /// <summary>
     /// Increment this value every time this class is modified.
     /// </summary>
-    public static int Version { get; } = 2;
+    public static int Version { get; } = 7;
 
 
-    private Dictionary<string, object> msgParams = null;
+    private Dictionary<string, object> properties = null;
 
     private static readonly StructuredMessageFormatter structuredMessageFormatter = new();
 
@@ -25,7 +26,20 @@ public class LogEntry : ILogEntry
     /// <summary>
     /// Gets or sets the unique identifier for the log entry.
     /// </summary>
-    public int Id { get; set; }
+    public int DbId { get; set; }
+
+
+    /// <inheritdoc/>
+    public string Category { get; set; }
+
+
+    /// <inheritdoc/>
+    public int EventId { get; set; }
+
+
+    /// <inheritdoc/>
+    public string EventName { get; set; }
+
 
     /// <summary>
     /// Gets or sets the timestamp when the log entry was created.
@@ -41,16 +55,63 @@ public class LogEntry : ILogEntry
     /// Gets or sets the message of the log entry. If used in the context of structured logging, this should be a template.
     /// For example, "User {Username} logged in.". Use the MsgParams for the actual values.
     /// </summary>
-    public string Message { get; set; } = string.Empty;
+    public string MessageTemplate { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the message parameters for structured logging.
     /// </summary>
-    public IReadOnlyDictionary<string, object> MsgParams
+    public IReadOnlyDictionary<string, object>? Properties
     {
-        get => msgParams;
-        set => msgParams = value == null ? null : value.ToDictionary(kv => kv.Key, kv => kv.Value);
+        get => properties;
+        set => properties = value == null ? null : value.ToDictionary(kv => kv.Key, kv => kv.Value);
     }
+
+
+    /// <summary>
+    /// Gets or sets the rendered message. This is the formatted message with parameters substituted.
+    /// </summary>
+    public string RenderedMessage { get; set; } = string.Empty;
+
+
+    /// <inheritdoc/>
+    public string ExceptionJson { get; set; }
+
+
+    public LogEntry()
+    {
+        Timestamp = DateTimeOffset.Now;
+    }
+
+
+    public LogEntry(
+        DateTimeOffset timeStamp,
+        string category,
+        LogLevel level,
+        int eventId,
+        string eventName,
+        string messageTemplate,
+        IReadOnlyDictionary<string, object>? properties,
+        Exception? ex = null)
+    {
+        Timestamp = timeStamp;
+        Category = category;
+        Level = level;
+        EventId = eventId;
+        EventName = eventName;
+        Timestamp = DateTimeOffset.Now;
+        MessageTemplate = messageTemplate;
+        Properties = properties;
+        ExceptionJson = ExceptionSerializer.ToJson(ex);
+    }
+
+
+    /// <inheritdoc/>
+    public void SetException(Exception ex) => ExceptionJson = ExceptionSerializer.ToJson(ex);
+
+
+    /// <inheritdoc/>
+    public SerializableException? GetExceptionInfo() => ExceptionSerializer.FromJson(ExceptionJson);
+
 
     /// <summary>
     /// Gets the formatted message with parameters substituted.
@@ -58,7 +119,7 @@ public class LogEntry : ILogEntry
     /// <returns>The formatted message.</returns>
     public string GetFormattedMsg()
     {
-        return structuredMessageFormatter.Format(Message, msgParams);
+        return structuredMessageFormatter.Format(MessageTemplate, properties);
     }
 
     /// <summary>
@@ -67,7 +128,7 @@ public class LogEntry : ILogEntry
     /// <returns>A JSON string representing the message parameters.</returns>
     public string SerializeMsgParams()
     {
-        return JsonConvert.SerializeObject(msgParams, jsonSettings);
+        return JsonConvert.SerializeObject(properties, jsonSettings);
     }
 
     /// <summary>
@@ -76,6 +137,6 @@ public class LogEntry : ILogEntry
     /// <param name="json">The JSON string representing the message parameters.</param>
     public void DeserializeMsgParams(string json)
     {
-        msgParams = JsonConvert.DeserializeObject<Dictionary<string, object>>(json, jsonSettings);
+        properties = JsonConvert.DeserializeObject<Dictionary<string, object>>(json, jsonSettings);
     }
 }

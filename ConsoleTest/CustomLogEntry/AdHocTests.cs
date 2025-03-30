@@ -1,6 +1,7 @@
 using CDS.SQLiteLogging;
+using Microsoft.Extensions.Logging;
 
-namespace ConsoleTest;
+namespace ConsoleTest.CustomLogEntry;
 
 /// <summary>
 /// Contains ad-hoc tests for the SQLite Logger.
@@ -21,7 +22,7 @@ static class AdHocTests
         Console.WriteLine($"Using log folder: {folder}");
 
         // Create a new instance of the SQLite Logger class
-        using var logger = new Logger<MyLogEntry>(
+        using var logger = new SQLiteLogger<MyLogEntry>(
             folder,
             schemaVersion: MyLogEntry.Version,
             new BatchingOptions(),
@@ -58,7 +59,7 @@ static class AdHocTests
     /// <param name="timestamp">The timestamp for the entry.</param>
     /// <param name="counter">A counter value for the entry.</param>
     private static void AddSampleLogEntry(
-        Logger<MyLogEntry> logger,
+        SQLiteLogger<MyLogEntry> logger,
         DateTimeOffset timestamp,
         int counter)
     {
@@ -74,9 +75,9 @@ static class AdHocTests
             LineIndex = counter,
             BatchId = "TestBatch",
             Sender = "ConsoleText",
-            Message = "Image with illumination {illumination} has result {result}.",
+            MessageTemplate = "Image with illumination {illumination} has result {result}.",
 
-            MsgParams = new Dictionary<string, object>
+            Properties = new Dictionary<string, object>
             {
                 ["illumination"] = MsgParamsGen.GetIllumination(),
                 ["result"] = MsgParamsGen.GetResult(),

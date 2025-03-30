@@ -1,5 +1,6 @@
 using FluentAssertions;
 using CDS.SQLiteLogging.Tests.TestSupport;
+using Microsoft.Extensions.Logging;
 
 namespace CDS.SQLiteLogging.Tests;
 
@@ -110,7 +111,7 @@ public class LogWriterTests
         var entry = new TestLogEntry
         {
             Timestamp = new DateTimeOffset(2023, 1, 1, 12, 0, 0, TimeSpan.FromHours(2)),
-            Message = "Testing DateTimeOffset"
+            MessageTemplate = "Testing DateTimeOffset"
         };
 
         // Act
@@ -213,7 +214,7 @@ public class LogWriterTests
         storedEntry.Timestamp.Should().Be(entry.Timestamp);
         storedEntry.Level.Should().Be(entry.Level);
         storedEntry.Sender.Should().Be(entry.Sender);
-        storedEntry.Message.Should().Be(entry.Message);
+        storedEntry.MessageTemplate.Should().Be(entry.MessageTemplate);
         storedEntry.Details.Should().Be(entry.Details);
     }
 
@@ -235,7 +236,7 @@ public class LogWriterTests
                 Timestamp = DateTimeOffset.Now,
                 Level = LogLevel.Information,
                 Sender = "BurstLogEntriesTest",
-                Message = $"Log entry {i}",
+                MessageTemplate = $"Log entry {i}",
                 Details = "Test Details"
             };
             logWriter.Add(entry);
@@ -258,7 +259,7 @@ public class LogWriterTests
             Timestamp = DateTimeOffset.Now,
             Level = LogLevel.Information,
             Sender = "LogWriterTests",
-            Message = message,
+            MessageTemplate = message,
             Details = "Test Details"
         };
     }

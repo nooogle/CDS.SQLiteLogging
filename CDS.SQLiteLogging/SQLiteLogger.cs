@@ -6,7 +6,7 @@ namespace CDS.SQLiteLogging;
 /// A facade for SQLite logging operations with caching and batching capabilities.
 /// </summary>
 /// <typeparam name="TLogEntry">A type that implements ILogEntry and has a parameterless constructor.</typeparam>
-public class Logger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, new()
+public class SQLiteLogger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, new()
 {
     private readonly ConnectionManager connectionManager;
     private readonly LogWriter<TLogEntry> writer;
@@ -30,13 +30,13 @@ public class Logger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, new()
 
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Logger{TLogEntry}"/> class.
+    /// Initializes a new instance of the <see cref="SQLiteLogger{TLogEntry}"/> class.
     /// </summary>
     /// <param name="folder">The folder where the SQLite database file will be located.</param>
     /// <param name="batchingOptions">Options for configuring batch processing.</param>
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
     /// <param name="schemaVersion">The version of the log schema, used in the database filename to help avoid reading or writing to a mismatched schema.</param>
-    public Logger(
+    public SQLiteLogger(
         string folder,
         int schemaVersion,
         BatchingOptions batchingOptions = null,
@@ -263,5 +263,5 @@ public class Logger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, new()
     /// <summary>
     /// Returns the number of log entries that have been discarded due to cache overflow.
     /// </summary>
-    public int DiscardedEntries => logCache.DiscardCount;
+    public int DiscardedEntriesCount => logCache.DiscardCount;
 }

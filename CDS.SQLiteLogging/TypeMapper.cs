@@ -26,7 +26,7 @@ public static class TypeMapper
             { typeof(bool), "INTEGER" },
             { typeof(double), "REAL" },
             { typeof(float), "REAL" },
-            { typeof(decimal), "REAL" }
+            { typeof(decimal), "REAL" },
         };
 
         // Add specific enum types to the mapping

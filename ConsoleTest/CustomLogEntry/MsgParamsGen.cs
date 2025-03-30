@@ -1,4 +1,4 @@
-﻿namespace ConsoleTest;
+﻿namespace ConsoleTest.CustomLogEntry;
 
 /// <summary>
 /// Provides methods to generate random parameters such as person names and fruit names.

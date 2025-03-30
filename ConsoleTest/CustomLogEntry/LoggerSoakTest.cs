@@ -1,14 +1,15 @@
 using CDS.SQLiteLogging;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
-namespace ConsoleTest;
+namespace ConsoleTest.CustomLogEntry;
 
 /// <summary>
 /// Provides soak testing capabilities for the SqliteLogger.
 /// </summary>
 sealed class LoggerSoakTest
 {
-    private readonly Logger<MyLogEntry> logger;
+    private readonly SQLiteLogger<MyLogEntry> logger;
     private readonly int entriesPerSecond;
     private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
     private readonly List<long> addTimesMs = new List<long>();
@@ -42,7 +43,7 @@ sealed class LoggerSoakTest
             CleanupInterval = TimeSpan.FromMinutes(2)      // Run cleanup every 2 minutes
         };
 
-        logger = new Logger<MyLogEntry>(
+        logger = new SQLiteLogger<MyLogEntry>(
             folder,
             schemaVersion: MyLogEntry.Version,
             batchingOptions,
@@ -145,9 +146,9 @@ sealed class LoggerSoakTest
             Level = logLevel,
             Sender = "SoakTest",
             LineIndex = counter,
-            Message = "Image with illumination {illumination} has result {result}.",
+            MessageTemplate = "Image with illumination {illumination} has result {result}.",
 
-            MsgParams = new Dictionary<string, object>
+            Properties = new Dictionary<string, object>
             {
                 ["illumination"] = MsgParamsGen.GetIllumination(),
                 ["result"] = MsgParamsGen.GetResult(),
@@ -212,7 +213,7 @@ sealed class LoggerSoakTest
         {
             entriesAdded = totalEntriesAdded;
             pendingEntries = logger.PendingEntries;
-            discardedEntries = logger.DiscardedEntries;
+            discardedEntries = logger.DiscardedEntriesCount;
             avgTime = totalEntriesAdded > 0 ? (double)totalAddTimeMs / totalEntriesAdded : 0;
             min = minAddTimeMs == long.MaxValue ? 0 : minAddTimeMs;
             max = maxAddTimeMs;
@@ -270,7 +271,7 @@ sealed class LoggerSoakTest
         lock (lockObject)
         {
             entriesAdded = totalEntriesAdded;
-            discardedEntries = logger.DiscardedEntries;
+            discardedEntries = logger.DiscardedEntriesCount;
             avgTime = totalEntriesAdded > 0 ? (double)totalAddTimeMs / totalEntriesAdded : 0;
             min = minAddTimeMs == long.MaxValue ? 0 : minAddTimeMs;
             max = maxAddTimeMs;

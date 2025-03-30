@@ -25,9 +25,9 @@ public class LogWriter<TLogEntry> where TLogEntry : ILogEntry, new()
 
         var properties = TableCreator.GetPublicNonStaticProperties<TLogEntry>();
 
-        // Exclude the Id property since it is auto-generated
+        // Exclude the DbId property since it is auto-generated
         insertionProperties = properties
-            .Where(p => !(p.Name.Equals("Id", StringComparison.OrdinalIgnoreCase) && p.PropertyType == typeof(int)))
+            .Where(p => !(p.Name.Equals("DbId", StringComparison.OrdinalIgnoreCase) && p.PropertyType == typeof(int)))
             .ToList();
 
         // Build the SQL INSERT command
@@ -105,7 +105,7 @@ public class LogWriter<TLogEntry> where TLogEntry : ILogEntry, new()
             }
 
             // For the MsgParams property, store as a JSON string
-            if (prop.Name.Equals(nameof(ILogEntry.MsgParams), StringComparison.OrdinalIgnoreCase) && value != null)
+            else if (prop.Name.Equals(nameof(ILogEntry.Properties), StringComparison.OrdinalIgnoreCase) && value != null)
             {
                 value = entry.SerializeMsgParams();
             }

@@ -75,9 +75,9 @@ public class TableCreator
     /// <returns>The SQL column definition string.</returns>
     private string GetColumnDefinition(PropertyInfo prop)
     {
-        if (prop.Name.Equals("Id", StringComparison.OrdinalIgnoreCase) && prop.PropertyType == typeof(int))
+        if (prop.Name.Equals("DbId", StringComparison.OrdinalIgnoreCase) && prop.PropertyType == typeof(int))
         {
-            return "Id INTEGER PRIMARY KEY AUTOINCREMENT";
+            return "DbId INTEGER PRIMARY KEY AUTOINCREMENT";
         }
 
         string sqliteType = TypeMapper.MapTypeToSqliteType(prop.PropertyType, typeToSqliteMap);

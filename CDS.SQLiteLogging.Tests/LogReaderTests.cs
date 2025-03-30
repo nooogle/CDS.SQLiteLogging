@@ -1,5 +1,6 @@
 using FluentAssertions;
 using CDS.SQLiteLogging.Tests.TestSupport;
+using Microsoft.Extensions.Logging;
 
 namespace CDS.SQLiteLogging.Tests;
 
@@ -93,7 +94,7 @@ public class LogReaderTests
 
         // Assert
         result.Should().HaveCount(3);
-        result.Select(e => e.Message).Should().BeEquivalentTo(entries.Select(e => e.Message));
+        result.Select(e => e.MessageTemplate).Should().BeEquivalentTo(entries.Select(e => e.MessageTemplate));
     }
 
     /// <summary>
@@ -117,7 +118,7 @@ public class LogReaderTests
 
         // Assert
         result.Should().HaveCount(3);
-        result.Select(e => e.Message).Should().BeEquivalentTo(entries.Select(e => e.Message));
+        result.Select(e => e.MessageTemplate).Should().BeEquivalentTo(entries.Select(e => e.MessageTemplate));
     }
 
     /// <summary>
@@ -140,8 +141,8 @@ public class LogReaderTests
 
         // Assert
         result.Should().HaveCount(2);
-        result[0].Message.Should().Be("New Entry");
-        result[1].Message.Should().Be("Mid Entry");
+        result[0].MessageTemplate.Should().Be("New Entry");
+        result[1].MessageTemplate.Should().Be("Mid Entry");
     }
 
     /// <summary>
@@ -165,8 +166,8 @@ public class LogReaderTests
 
         // Assert
         result.Should().HaveCount(2);
-        result[0].Message.Should().Be("New Entry");
-        result[1].Message.Should().Be("Mid Entry");
+        result[0].MessageTemplate.Should().Be("New Entry");
+        result[1].MessageTemplate.Should().Be("Mid Entry");
     }
 
     /// <summary>
@@ -219,7 +220,7 @@ public class LogReaderTests
             Timestamp = new DateTimeOffset(2023, 3, 15, 14, 30, 45, TimeSpan.FromHours(2)),
             Level = LogLevel.Information,
             Sender = "TestSender",
-            Message = "Test Message",
+            MessageTemplate = "Test Message",
             Details = "Detailed information"
         };
 
@@ -232,7 +233,7 @@ public class LogReaderTests
         result.Timestamp.Should().Be(entry.Timestamp);
         result.Level.Should().Be(entry.Level);
         result.Sender.Should().Be(entry.Sender);
-        result.Message.Should().Be(entry.Message);
+        result.MessageTemplate.Should().Be(entry.MessageTemplate);
         result.Details.Should().Be(entry.Details);
     }
 
@@ -290,7 +291,7 @@ public class LogReaderTests
             Timestamp = timestamp ?? DateTimeOffset.Now,
             Level = level,
             Sender = "LogReaderTests",
-            Message = message,
+            MessageTemplate = message,
             Details = "Test Details"
         };
     }
