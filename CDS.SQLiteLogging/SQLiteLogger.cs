@@ -5,32 +5,28 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// A facade for SQLite logging operations with caching and batching capabilities.
 /// </summary>
-/// <typeparam name="TLogEntry">A type that implements ILogEntry and has a parameterless constructor.</typeparam>
-public class SQLiteLogger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, new()
+public class SQLiteLogger : IDisposable
 {
     private readonly ConnectionManager connectionManager;
-    private readonly LogWriter<TLogEntry> writer;
-    private readonly LogReader<TLogEntry> reader;
-    private readonly LogHousekeeper<TLogEntry> housekeeper;
-    private readonly BatchLogCache<TLogEntry> logCache;
+    private readonly LogWriter writer;
+    private readonly LogReader reader;
+    private readonly LogHousekeeper housekeeper;
+    private readonly BatchLogCache logCache;
     private bool disposed;
-
 
     /// <summary>
     /// Optional callback for when a log entry is about to be added to the cache. 
     /// The client has an opportunity to ignore or modify the entry before it is added.
     /// </summary>
-    public OnAboutToAddLogEntry<TLogEntry> OnAboutToAddLogEntry { get; set; }
-
+    public OnAboutToAddLogEntry OnAboutToAddLogEntry { get; set; }
 
     /// <summary>
     /// Optional callback for when a log entry has been added to the cache.
     /// </summary>
-    public OnAddedLogEntry<TLogEntry> OnAddedLogEntry { get; set; }
-
+    public OnAddedLogEntry OnAddedLogEntry { get; set; }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="SQLiteLogger{TLogEntry}"/> class.
+    /// Initializes a new instance of the <see cref="SQLiteLogger"/> class.
     /// </summary>
     /// <param name="fileName">The name of the SQLite database file.</param>
     /// <param name="batchingOptions">Options for configuring batch processing.</param>
@@ -43,27 +39,21 @@ public class SQLiteLogger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, 
         // Initialize connection manager
         connectionManager = new ConnectionManager(fileName);
 
-        // Create type mapping
-        var properties = typeof(TLogEntry).GetProperties();
-        var typeMap = TypeMapper.CreateTypeToSqliteMap(properties);
-
         // Create table schema
-        var tableCreator = new TableCreator(connectionManager, typeMap);
-        string tableName = tableCreator.CreateTableForType<TLogEntry>();
+        var tableCreator = new TableCreator(connectionManager);
+        string tableName = tableCreator.CreateTableForLogEntry();
 
         // Initialize writer and reader
-        writer = new LogWriter<TLogEntry>(connectionManager, tableName);
-        reader = new LogReader<TLogEntry>(connectionManager, tableName);
+        writer = new LogWriter(connectionManager, tableName);
+        reader = new LogReader(connectionManager, tableName);
 
         // Setup batching with defaults if options not provided
         batchingOptions ??= new BatchingOptions();
-        logCache = new BatchLogCache<TLogEntry>(
-            writer,
-            batchingOptions);
+        logCache = new BatchLogCache(writer, batchingOptions);
 
         // Initialize housekeeper with defaults if not specified
         houseKeepingOptions ??= new HouseKeepingOptions();
-        housekeeper = new LogHousekeeper<TLogEntry>(
+        housekeeper = new LogHousekeeper(
             connectionManager,
             tableName,
             houseKeepingOptions.RetentionPeriod,
@@ -73,18 +63,18 @@ public class SQLiteLogger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, 
     /// <summary>
     /// Gets the log housekeeper instance.
     /// </summary>
-    public LogHousekeeper<TLogEntry> Housekeeper => housekeeper;
+    public LogHousekeeper Housekeeper => housekeeper;
 
     /// <summary>
     /// Gets the number of entries currently pending in the cache.
     /// </summary>
-    public int PendingEntries => logCache.PendingCount;
+    public int PendingEntriesCount => logCache.PendingCount;
 
     /// <summary>
     /// Adds a new log entry to the cache for batch processing.
     /// </summary>
     /// <param name="entry">The log entry to add.</param>
-    public void Add(TLogEntry entry)
+    public void Add(LogEntry entry)
     {
         bool shouldIgnore = false;
         OnAboutToAddLogEntry?.Invoke(entry, ref shouldIgnore);
@@ -101,24 +91,18 @@ public class SQLiteLogger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, 
     /// <summary>
     /// Flushes all pending entries from the cache to the database.
     /// </summary>
-    public Task FlushAsync()
-    {
-        return logCache.FlushAllAsync();
-    }
+    public Task FlushAsync() => logCache.FlushAllAsync();
 
     /// <summary>
     /// Flushes all pending entries from the cache to the database synchronously.
     /// </summary>
-    public void Flush()
-    {
-        logCache.FlushAll();
-    }
+    public void Flush() => logCache.FlushAll();
 
     /// <summary>
     /// Reads and returns all log entries from the database.
     /// </summary>
     /// <returns>An immutable list of log entries.</returns>
-    public ImmutableList<TLogEntry> GetAllEntries()
+    public ImmutableList<LogEntry> GetAllEntries()
     {
         // Flush pending entries first to ensure we get the most recent data
         Flush();
@@ -129,7 +113,7 @@ public class SQLiteLogger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, 
     /// Reads and returns all log entries from the database asynchronously.
     /// </summary>
     /// <returns>An immutable list of log entries.</returns>
-    public async Task<ImmutableList<TLogEntry>> GetAllEntriesAsync()
+    public async Task<ImmutableList<LogEntry>> GetAllEntriesAsync()
     {
         // Flush pending entries first to ensure we get the most recent data
         await FlushAsync().ConfigureAwait(false);
@@ -174,7 +158,6 @@ public class SQLiteLogger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, 
         }
     }
 
-
     /// <summary>
     /// Deletes all log entries from the database.
     /// </summary>
@@ -202,7 +185,7 @@ public class SQLiteLogger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, 
     /// </summary>
     /// <param name="maxCount">The maximum number of entries to return.</param>
     /// <returns>An immutable list of log entries, ordered by timestamp descending.</returns>
-    public ImmutableList<TLogEntry> GetRecentEntries(int maxCount)
+    public ImmutableList<LogEntry> GetRecentEntries(int maxCount)
     {
         // Flush any pending entries first to ensure we get the most recent data
         Flush();
@@ -214,24 +197,17 @@ public class SQLiteLogger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, 
     /// </summary>
     /// <param name="maxCount">The maximum number of entries to return.</param>
     /// <returns>A task representing the asynchronous operation, with an immutable list of log entries.</returns>
-    public async Task<ImmutableList<TLogEntry>> GetRecentEntriesAsync(int maxCount)
+    public async Task<ImmutableList<LogEntry>> GetRecentEntriesAsync(int maxCount)
     {
         await FlushAsync().ConfigureAwait(false);
         return await reader.GetRecentEntriesAsync(maxCount).ConfigureAwait(false);
     }
 
-
     /// <summary>
     /// Returns the size of the database file in bytes.
     /// </summary>
-    /// <returns>
-    /// The size of the database file in bytes.
-    /// </returns>
-    public long GetDatabaseFileSize()
-    {
-        return connectionManager.GetDatabaseFileSize();
-    }
-
+    /// <returns>The size of the database file in bytes.</returns>
+    public long GetDatabaseFileSize() => connectionManager.GetDatabaseFileSize();
 
     /// <summary>
     /// Returns log entries that match the specified message parameter.
@@ -239,12 +215,11 @@ public class SQLiteLogger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, 
     /// <param name="key">The message parameter key to search for.</param>
     /// <param name="value">The message parameter value to search for.</param>
     /// <returns>A task representing the asynchronous operation, with an immutable list of log entries.</returns>
-    public async Task<ImmutableList<TLogEntry>> GetEntriesByMessageParamAsync(string key, object value)
+    public async Task<ImmutableList<LogEntry>> GetEntriesByMessageParamAsync(string key, object value)
     {
         await FlushAsync().ConfigureAwait(false);
-        return await reader.GetEntriesByMessageParamAsync(key: key, value: value).ConfigureAwait(false);
+        return await reader.GetEntriesByMessageParamAsync(key, value).ConfigureAwait(false);
     }
-
 
     /// <summary>
     /// Reads and returns log entries that contain a specific message parameter (synchronous version).
@@ -252,14 +227,11 @@ public class SQLiteLogger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, 
     /// <param name="key">The key of the message parameter to search for.</param>
     /// <param name="value">The value of the message parameter to search for.</param>
     /// <returns>An immutable list of log entries that match the specified message parameter.</returns>
-    public ImmutableList<TLogEntry> GetEntriesByMessageParam(string key, object value)
-    {
-        return GetEntriesByMessageParamAsync(key, value).GetAwaiter().GetResult();
-    }
-
+    public ImmutableList<LogEntry> GetEntriesByMessageParam(string key, object value) => GetEntriesByMessageParamAsync(key, value).GetAwaiter().GetResult();
 
     /// <summary>
     /// Returns the number of log entries that have been discarded due to cache overflow.
     /// </summary>
     public int DiscardedEntriesCount => logCache.DiscardCount;
 }
+

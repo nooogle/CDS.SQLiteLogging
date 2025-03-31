@@ -5,12 +5,11 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Provides caching and batch processing capabilities for log entries.
 /// </summary>
-/// <typeparam name="TLogEntry">The type of log entry to cache.</typeparam>
-public class BatchLogCache<TLogEntry> : IDisposable where TLogEntry : ILogEntry, new()
+public class BatchLogCache : IDisposable
 {
-    private readonly ConcurrentQueue<TLogEntry> entryQueue = new ConcurrentQueue<TLogEntry>();
+    private readonly ConcurrentQueue<LogEntry> entryQueue = new ConcurrentQueue<LogEntry>();
     private readonly Timer flushTimer;
-    private readonly LogWriter<TLogEntry> logWriter;
+    private readonly LogWriter logWriter;
     private readonly int batchSize;
     private readonly int maxCacheSize;
     private readonly TimeSpan flushInterval;
@@ -20,15 +19,11 @@ public class BatchLogCache<TLogEntry> : IDisposable where TLogEntry : ILogEntry,
     private readonly ManualResetEventSlim shutdownEvent = new ManualResetEventSlim(false);
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="BatchLogCache{TLogEntry}"/> class.
+    /// Initializes a new instance of the <see cref="BatchLogCache"/> class.
     /// </summary>
     /// <param name="logWriter">The SQLite log writer.</param>
-    /// <param name="flushInterval">How often to flush the cache to the database.</param>
-    /// <param name="batchSize">Maximum number of entries to write in a single batch.</param>
-    /// <param name="maxCacheSize">Maximum number of entries to keep in the cache.</param>
-    public BatchLogCache(
-        LogWriter<TLogEntry> logWriter,
-        BatchingOptions options)
+    /// <param name="options">Options for configuring batch processing.</param>
+    public BatchLogCache(LogWriter logWriter, BatchingOptions options)
     {
         this.logWriter = logWriter;
         this.flushInterval = options.FlushInterval;
@@ -57,11 +52,11 @@ public class BatchLogCache<TLogEntry> : IDisposable where TLogEntry : ILogEntry,
     /// Adds a log entry to the cache for batch processing.
     /// </summary>
     /// <param name="entry">The log entry to add.</param>
-    public void Add(TLogEntry entry)
+    public void Add(LogEntry entry)
     {
         if (disposed)
         {
-            throw new ObjectDisposedException(nameof(BatchLogCache<TLogEntry>));
+            throw new ObjectDisposedException(nameof(BatchLogCache));
         }
 
         if (pendingEntries >= maxCacheSize)
@@ -131,7 +126,7 @@ public class BatchLogCache<TLogEntry> : IDisposable where TLogEntry : ILogEntry,
         }
 
         // Take a snapshot of entries to process
-        var entries = new List<TLogEntry>(Math.Min(batchSize, pendingEntries));
+        var entries = new List<LogEntry>(Math.Min(batchSize, pendingEntries));
         int processed = 0;
 
         // Dequeue entries up to batch size

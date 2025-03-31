@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace ConsoleTest.MSLogger.BreadFactorySimulator;
+namespace ConsoleTest.ScopeDemo;
 
 /// <summary>
 /// Represents a cleaning system for the factory.

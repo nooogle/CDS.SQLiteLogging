@@ -5,16 +5,14 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Writes log entries to an SQLite database.
 /// </summary>
-/// <typeparam name="TLogEntry">The type of log entry to write.</typeparam>
-public class LogWriter<TLogEntry> where TLogEntry : ILogEntry, new()
+public class LogWriter
 {
     private readonly ConnectionManager connectionManager;
     private readonly string tableName;
-    private readonly List<PropertyInfo> insertionProperties;
     private readonly string sqlInsert;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="LogWriter{TLogEntry}"/> class.
+    /// Initializes a new instance of the <see cref="LogWriter"/> class.
     /// </summary>
     /// <param name="connectionManager">The SQLite connection manager.</param>
     /// <param name="tableName">The name of the table to write to.</param>
@@ -23,24 +21,20 @@ public class LogWriter<TLogEntry> where TLogEntry : ILogEntry, new()
         this.connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
         this.tableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
 
-        var properties = TableCreator.GetPublicNonStaticProperties<TLogEntry>();
-
-        // Exclude the DbId property since it is auto-generated
-        insertionProperties = properties
-            .Where(p => !(p.Name.Equals("DbId", StringComparison.OrdinalIgnoreCase) && p.PropertyType == typeof(int)))
-            .ToList();
-
-        // Build the SQL INSERT command
-        string columns = string.Join(", ", insertionProperties.Select(p => p.Name));
-        string parameters = string.Join(", ", insertionProperties.Select(p => "@" + p.Name));
-        sqlInsert = $"INSERT INTO {tableName} ({columns}) VALUES ({parameters});";
+        // Predefined SQL INSERT command
+        sqlInsert = $@"
+            INSERT INTO {tableName} (
+                Category, EventId, EventName, Timestamp, Level, MessageTemplate, Properties, RenderedMessage, ExceptionJson, ScopesJson
+            ) VALUES (
+                @Category, @EventId, @EventName, @Timestamp, @Level, @MessageTemplate, @Properties, @RenderedMessage, @ExceptionJson, @ScopesJson
+            );";
     }
 
     /// <summary>
     /// Adds a new log entry to the database using a transaction.
     /// </summary>
     /// <param name="entry">The log entry to add.</param>
-    public void Add(TLogEntry entry)
+    public void Add(LogEntry entry)
     {
         if (entry == null) throw new ArgumentNullException(nameof(entry));
         AddAsync(entry).GetAwaiter().GetResult();
@@ -51,7 +45,7 @@ public class LogWriter<TLogEntry> where TLogEntry : ILogEntry, new()
     /// </summary>
     /// <param name="entry">The log entry to add.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task AddAsync(TLogEntry entry)
+    public async Task AddAsync(LogEntry entry)
     {
         if (entry == null) throw new ArgumentNullException(nameof(entry));
         await connectionManager.ExecuteInTransactionAsync(async transaction =>
@@ -69,7 +63,7 @@ public class LogWriter<TLogEntry> where TLogEntry : ILogEntry, new()
     /// </summary>
     /// <param name="entries">The log entries to add.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task AddBatchAsync(IEnumerable<TLogEntry> entries)
+    public async Task AddBatchAsync(IEnumerable<LogEntry> entries)
     {
         if (entries == null) throw new ArgumentNullException(nameof(entries));
         await connectionManager.ExecuteInTransactionAsync(async transaction =>
@@ -92,25 +86,17 @@ public class LogWriter<TLogEntry> where TLogEntry : ILogEntry, new()
     /// </summary>
     /// <param name="cmd">The SQLite command.</param>
     /// <param name="entry">The log entry.</param>
-    private void AddParametersToCommand(SqliteCommand cmd, TLogEntry entry)
+    private void AddParametersToCommand(SqliteCommand cmd, LogEntry entry)
     {
-        foreach (var prop in insertionProperties)
-        {
-            object value = prop.GetValue(entry);
-
-            // For DateTimeOffset, store as an ISO 8601 string
-            if (prop.PropertyType == typeof(DateTimeOffset) && value != null)
-            {
-                value = ((DateTimeOffset)value).ToString("o");
-            }
-
-            // For the MsgParams property, store as a JSON string
-            else if (prop.Name.Equals(nameof(ILogEntry.Properties), StringComparison.OrdinalIgnoreCase) && value != null)
-            {
-                value = entry.SerializeMsgParams();
-            }
-
-            cmd.Parameters.AddWithValue("@" + prop.Name, value ?? DBNull.Value);
-        }
+        cmd.Parameters.AddWithValue("@Category", entry.Category ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue("@EventId", entry.EventId);
+        cmd.Parameters.AddWithValue("@EventName", entry.EventName ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue("@Timestamp", entry.Timestamp.ToString("o"));
+        cmd.Parameters.AddWithValue("@Level", entry.Level);
+        cmd.Parameters.AddWithValue("@MessageTemplate", entry.MessageTemplate ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue("@Properties", entry.SerializeMsgParams() ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue("@RenderedMessage", entry.RenderedMessage ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue("@ExceptionJson", entry.ExceptionJson ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue("@ScopesJson", entry.ScopesJson ?? (object)DBNull.Value);
     }
 }

@@ -3,12 +3,13 @@ using System.Collections.Concurrent;
 
 namespace CDS.SQLiteLogging.Microsoft;
 
+
 /// <summary>
 /// Provides an implementation of <see cref="ILoggerProvider"/> that creates instances of <see cref="MSSQLiteLogger"/>.
 /// </summary>
 public class SQLiteLoggerProvider : ILoggerProvider
 {
-    private readonly SQLiteLogger<LogEntry> sharedLogger;
+    private readonly SQLiteLogger sharedLogger;
     private readonly LoggerExternalScopeProvider scopeProvider = new LoggerExternalScopeProvider();
     private readonly ConcurrentDictionary<string, MSSQLiteLogger> loggers = new();
 
@@ -20,7 +21,7 @@ public class SQLiteLoggerProvider : ILoggerProvider
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
     private SQLiteLoggerProvider(string fileName, BatchingOptions batchingOptions, HouseKeepingOptions houseKeepingOptions)
     {
-        sharedLogger = new SQLiteLogger<LogEntry>(
+        sharedLogger = new SQLiteLogger(
             fileName: fileName,
             batchingOptions,
             houseKeepingOptions);

@@ -3,7 +3,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Provides automated housekeeping for log entries, periodically deleting old records.
 /// </summary>
-public class LogHousekeeper<TLogEntry> : IDisposable where TLogEntry : ILogEntry, new()
+public class LogHousekeeper : IDisposable
 {
     private readonly ConnectionManager connectionManager;
     private readonly string tableName;
@@ -12,7 +12,7 @@ public class LogHousekeeper<TLogEntry> : IDisposable where TLogEntry : ILogEntry
     private TimeSpan retentionPeriod;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="LogHousekeeper{TLogEntry}"/> class.
+    /// Initializes a new instance of the <see cref="LogHousekeeper"/> class.
     /// </summary>
     /// <param name="connectionManager">The SQLite connection manager.</param>
     /// <param name="tableName">The name of the table to maintain.</param>
@@ -44,7 +44,6 @@ public class LogHousekeeper<TLogEntry> : IDisposable where TLogEntry : ILogEntry
         get => retentionPeriod;
         set => retentionPeriod = value;
     }
-
 
     /// <summary>
     /// Callback method that performs the cleanup operation.
@@ -91,11 +90,7 @@ public class LogHousekeeper<TLogEntry> : IDisposable where TLogEntry : ILogEntry
     /// </summary>
     /// <param name="cutoffDate">The cutoff date for deletion.</param>
     /// <returns>The number of entries deleted.</returns>
-    public int DeleteEntriesOlderThan(DateTime cutoffDate)
-    {
-        return DeleteEntriesOlderThanAsync(cutoffDate).GetAwaiter().GetResult();
-    }
-
+    public int DeleteEntriesOlderThan(DateTime cutoffDate) => DeleteEntriesOlderThanAsync(cutoffDate).GetAwaiter().GetResult();
 
     /// <summary>
     /// Disposes resources used by the housekeeper.
@@ -123,7 +118,6 @@ public class LogHousekeeper<TLogEntry> : IDisposable where TLogEntry : ILogEntry
         }
     }
 
-
     /// <summary>
     /// Deletes all entries from the database.
     /// </summary>
@@ -147,8 +141,5 @@ public class LogHousekeeper<TLogEntry> : IDisposable where TLogEntry : ILogEntry
     /// Deletes all entries from the database (synchronous version).
     /// </summary>
     /// <returns>The number of entries deleted.</returns>
-    public int DeleteAll()
-    {
-        return DeleteAllAsync().GetAwaiter().GetResult();
-    }
+    public int DeleteAll() => DeleteAllAsync().GetAwaiter().GetResult();
 }

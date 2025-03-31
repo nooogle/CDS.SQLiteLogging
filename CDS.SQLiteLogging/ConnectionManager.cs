@@ -90,7 +90,8 @@ public class ConnectionManager : IDisposable
     /// <param name="action">The action to execute within a transaction.</param>
     /// <param name="isolationLevel">The transaction isolation level.</param>
     /// <returns>True if the operation completed successfully, false otherwise.</returns>
-    public async Task<bool> ExecuteInTransactionAsync(Func<SqliteTransaction, Task> action,
+    public async Task<bool> ExecuteInTransactionAsync(
+        Func<SqliteTransaction, Task> action,
         IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
     {
         await semaphore.WaitAsync().ConfigureAwait(false);

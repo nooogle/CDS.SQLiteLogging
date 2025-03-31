@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace ConsoleTest.MSLogger.BreadFactorySimulator;
+namespace ConsoleTest.ScopeDemo;
 
 /// <summary>
 /// Represents an oven system that bakes bread.

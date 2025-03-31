@@ -3,14 +3,51 @@ using Newtonsoft.Json;
 
 namespace CDS.SQLiteLogging.Microsoft;
 
+//// TODO other methods and async varients
+//public interface IMSSQLiteLogger : ILogger
+//{
+//    void Flush();
+
+
+//    /// <summary>
+//    /// Deletes all log entries from the database.
+//    /// </summary>
+//    /// <returns>
+//    /// Number of entries deleted.
+//    /// </returns>
+//    int DeleteAll();
+
+
+//    /// <summary>
+//    /// Gets the size of the database file.
+//    /// </summary>
+//    /// <returns>
+//    /// Size of the database file in bytes.
+//    /// </returns>
+//    long GetDatabaseFileSize();
+
+//    int PendingEntriesCount { get; } 
+
+//    int DiscardedEntriesCount { get; }
+//}
+
+
 /// <summary>
 /// A logger implementation that logs messages to an SQLite database.
 /// </summary>
 public class MSSQLiteLogger : ILogger, IDisposable
 {
     private readonly string categoryName;
-    private readonly SQLiteLogger<LogEntry> logger;
+    private readonly SQLiteLogger logger;
     private readonly IExternalScopeProvider scopeProvider;
+
+
+    /// <inheritdoc/>
+    public int PendingEntriesCount => logger.PendingEntriesCount;
+
+    /// <inheritdoc/>
+    public int DiscardedEntriesCount => logger.DiscardedEntriesCount;
+
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MSSQLiteLogger"/> class.
@@ -18,7 +55,7 @@ public class MSSQLiteLogger : ILogger, IDisposable
     /// <param name="categoryName">The category name for the logger.</param>
     /// <param name="logger">The SQLite logger instance.</param>
     /// <param name="scopeProvider">The scope provider for managing logging scopes.</param>
-    public MSSQLiteLogger(string categoryName, SQLiteLogger<LogEntry> logger, IExternalScopeProvider scopeProvider)
+    public MSSQLiteLogger(string categoryName, SQLiteLogger logger, IExternalScopeProvider scopeProvider)
     {
         this.categoryName = categoryName;
         this.logger = logger;
@@ -157,5 +194,25 @@ public class MSSQLiteLogger : ILogger, IDisposable
         return flattened.Count == 0
             ? null
             : JsonConvert.SerializeObject(flattened);
+    }
+
+    /// <inheritdoc/>
+    public void Flush()
+    {
+        logger.Flush();
+    }
+
+    /// <inheritdoc/>
+    public int DeleteAll()
+    {
+        int deleteCount = logger.DeleteAll();
+        return deleteCount;
+    }
+
+
+    /// <inheritdoc/>
+    public long GetDatabaseFileSize()
+    {
+        return logger.GetDatabaseFileSize();
     }
 }
