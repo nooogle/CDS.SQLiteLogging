@@ -5,7 +5,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Provides caching and batch processing capabilities for log entries.
 /// </summary>
-public class BatchLogCache : IDisposable
+class BatchLogCache : IDisposable
 {
     private readonly ConcurrentQueue<LogEntry> entryQueue = new ConcurrentQueue<LogEntry>();
     private readonly Timer flushTimer;

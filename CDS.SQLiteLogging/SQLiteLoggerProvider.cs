@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
-namespace CDS.SQLiteLogging.Microsoft;
+namespace CDS.SQLiteLogging;
 
 
 /// <summary>

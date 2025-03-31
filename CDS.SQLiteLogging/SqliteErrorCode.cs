@@ -5,7 +5,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Represents SQLite error codes. They don't seem to be defined in the SQLite library.
 /// </summary>
-public enum SqliteErrorCode
+enum SqliteErrorCode
 {
     /// <summary>
     /// The database file is locked/busy.

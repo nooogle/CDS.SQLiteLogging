@@ -5,7 +5,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Writes log entries to an SQLite database.
 /// </summary>
-public class LogWriter
+class LogWriter
 {
     private readonly ConnectionManager connectionManager;
     private readonly string tableName;

@@ -6,7 +6,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// A lightweight, high-performance formatter for structured log messages.
 /// </summary>
-public class StructuredMessageFormatter
+class StructuredMessageFormatter
 {
     // The text to substitute when a parameter is missing or an error occurs during formatting.
     private const string MissingParameterSubstitution = "MissingMsgParam";
@@ -22,7 +22,7 @@ public class StructuredMessageFormatter
     /// <param name="parameters">Optional: the list of key-value pairs for substitution. The tempate is returned unaltered if this is null.</param>
     /// <returns>The fully formatted message.</returns>
     /// <exception cref="ArgumentNullException">Thrown if template is null.</exception>
-    public string Format(string template, IEnumerable<KeyValuePair<string, object>> parameters)
+    public string Format(string template, IEnumerable<KeyValuePair<string, object>>? parameters)
     {
         if (template == null)
         {

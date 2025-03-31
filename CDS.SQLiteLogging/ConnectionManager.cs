@@ -7,7 +7,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Manages the SQLite database connection.
 /// </summary>
-public class ConnectionManager : IDisposable
+class ConnectionManager : IDisposable
 {
     private readonly string fileName;
     private readonly SqliteConnection connection;
@@ -21,7 +21,7 @@ public class ConnectionManager : IDisposable
     /// <param name="fileName">The name of the SQLite database file.</param>
     public ConnectionManager(string fileName)
     {
-        var folderPath = Path.GetDirectoryName(fileName);
+        var folderPath = Path.GetDirectoryName(fileName) ?? string.Empty;
         Directory.CreateDirectory(folderPath);
 
         this.fileName = fileName;

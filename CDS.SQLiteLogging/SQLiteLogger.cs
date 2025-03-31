@@ -5,7 +5,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// A facade for SQLite logging operations with caching and batching capabilities.
 /// </summary>
-public class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
+class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
 {
     private readonly ConnectionManager connectionManager;
     private readonly LogWriter writer;
@@ -14,16 +14,6 @@ public class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
     private readonly BatchLogCache logCache;
     private bool disposed;
 
-    /// <summary>
-    /// Optional callback for when a log entry is about to be added to the cache. 
-    /// The client has an opportunity to ignore or modify the entry before it is added.
-    /// </summary>
-    public OnAboutToAddLogEntry OnAboutToAddLogEntry { get; set; }
-
-    /// <summary>
-    /// Optional callback for when a log entry has been added to the cache.
-    /// </summary>
-    public OnAddedLogEntry OnAddedLogEntry { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SQLiteLogger"/> class.
@@ -33,8 +23,8 @@ public class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
     public SQLiteLogger(
         string fileName,
-        BatchingOptions batchingOptions = null,
-        HouseKeepingOptions houseKeepingOptions = null)
+        BatchingOptions batchingOptions,
+        HouseKeepingOptions houseKeepingOptions)
     {
         // Initialize connection manager
         connectionManager = new ConnectionManager(fileName);
@@ -77,15 +67,12 @@ public class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
     public void Add(LogEntry entry)
     {
         bool shouldIgnore = false;
-        OnAboutToAddLogEntry?.Invoke(entry, ref shouldIgnore);
         if (shouldIgnore)
         {
             return;
         }
 
         logCache.Add(entry);
-
-        OnAddedLogEntry?.Invoke(entry);
     }
 
     /// <summary>

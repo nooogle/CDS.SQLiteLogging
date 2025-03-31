@@ -3,7 +3,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Creates tables in SQLite databases based on the <see cref="LogEntry"/> type definition.
 /// </summary>
-public class TableCreator
+class TableCreator
 {
     private readonly ConnectionManager connectionManager;
 

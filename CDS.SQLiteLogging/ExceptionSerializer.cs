@@ -6,7 +6,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Provides methods for serializing and deserializing exceptions.
 /// </summary>
-public static class ExceptionSerializer
+static class ExceptionSerializer
 {
     private static readonly JsonSerializerSettings jsonSettings = new JsonSerializerSettings
     {

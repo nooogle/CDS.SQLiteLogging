@@ -3,7 +3,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Provides automated housekeeping for log entries, periodically deleting old records.
 /// </summary>
-public class LogHousekeeper : IDisposable
+class LogHousekeeper : IDisposable
 {
     private readonly ConnectionManager connectionManager;
     private readonly string tableName;

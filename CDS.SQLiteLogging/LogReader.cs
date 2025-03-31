@@ -8,7 +8,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Reads log entries from an SQLite database.
 /// </summary>
-public class LogReader
+class LogReader
 {
     private readonly ConnectionManager connectionManager;
     private readonly string tableName;

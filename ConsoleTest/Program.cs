@@ -36,9 +36,9 @@ class Program
             nameof(CDS),
             nameof(CDS.SQLiteLogging),
             nameof(ConsoleTest),
-            $"MSTest_Schema{LogEntry.Version}.db");
+            $"Log_V{MSSQLiteLogger.DBSchemaVersion}.db");
 
-        var sqliteLoggerProvider = CDS.SQLiteLogging.Microsoft.SQLiteLoggerProvider.Create(
+        var sqliteLoggerProvider = CDS.SQLiteLogging.SQLiteLoggerProvider.Create(
             dbPath,
             batchingOptions,
             houseKeepingOptions);

@@ -6,17 +6,12 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Represents a log entry.
 /// </summary>
-public class LogEntry
+class LogEntry
 {
-    /// <summary>
-    /// Increment this value every time this class is modified.
-    /// </summary>
-    public static int Version { get; } = 8;
-
     /// <summary>
     /// Stores the message parameters for structured logging.
     /// </summary>
-    private Dictionary<string, object> properties = null;
+    private Dictionary<string, object>? properties = null;
 
     /// <summary>
     /// Formatter for structured log messages.
@@ -39,7 +34,7 @@ public class LogEntry
     /// <summary>
     /// Gets or sets the category of the log entry.
     /// </summary>
-    public string Category { get; set; }
+    public string? Category { get; set; }
 
     /// <summary>
     /// Gets or sets the event ID of the log entry.
@@ -49,7 +44,7 @@ public class LogEntry
     /// <summary>
     /// Gets or sets the event name of the log entry.
     /// </summary>
-    public string EventName { get; set; }
+    public string? EventName { get; set; }
 
     /// <summary>
     /// Gets or sets the timestamp when the log entry was created.
@@ -84,7 +79,7 @@ public class LogEntry
     /// <summary>
     /// Gets or sets the JSON representation of the exception.
     /// </summary>
-    public string ExceptionJson { get; set; }
+    public string? ExceptionJson { get; set; }
 
     /// <summary>
     /// Gets or sets the JSON representation of the scopes.
