@@ -13,6 +13,13 @@ public class SQLiteLoggerProvider : ILoggerProvider
     private readonly LoggerExternalScopeProvider scopeProvider = new LoggerExternalScopeProvider();
     private readonly ConcurrentDictionary<string, MSSQLiteLogger> loggers = new();
 
+
+    /// <summary>
+    /// Gets the <see cref="ISQLiteLoggerUtilities"/> instance for this provider.
+    /// </summary>
+    public ISQLiteLoggerUtilities LoggerUtilities => sharedLogger;
+
+
     /// <summary>
     /// Creates a new instance of the <see cref="SQLiteLoggerProvider"/> class.
     /// </summary>

@@ -1,3 +1,4 @@
+using CDS.SQLiteLogging;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
@@ -9,6 +10,7 @@ namespace ConsoleTest;
 class LoggerSoakTest
 {
     private readonly ILogger logger;
+    private readonly ISQLiteLoggerUtilities loggerUtilities;
     private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
     private readonly List<long> addTimesMs = new List<long>();
     private readonly Stopwatch stopwatchTotal = new Stopwatch();
@@ -24,9 +26,10 @@ class LoggerSoakTest
     /// </summary>
     /// <param name="folder">The folder where the logs will be stored.</param>
     /// <param name="entriesPerSecond">The number of log entries to add per second.</param>
-    public LoggerSoakTest(ILogger<LoggerSoakTest> logger)
+    public LoggerSoakTest(ILogger<LoggerSoakTest> logger, ISQLiteLoggerUtilities loggerUtilities)
     {
         this.logger = logger;
+        this.loggerUtilities = loggerUtilities;
     }
 
 
@@ -40,7 +43,7 @@ class LoggerSoakTest
         Console.WriteLine("==== SQLite Logger Soak Test ====");
         Console.WriteLine();
         Console.Write("Enter entries per second (default 10): ");
-        string rateInput = Console.ReadLine();
+        string rateInput = Console.ReadLine() ?? string.Empty;
         entriesPerSecond = string.IsNullOrWhiteSpace(rateInput) ? 10 : int.Parse(rateInput);
 
 
@@ -106,7 +109,7 @@ class LoggerSoakTest
             // Ensure pending entries are flushed
             try
             {
-                // logger.Flush(); TODO
+                await loggerUtilities.FlushAsync();
             }
             catch (Exception ex)
             {
@@ -178,57 +181,55 @@ class LoggerSoakTest
     /// </summary>
     private void DisplayCurrentStatistics()
     {
-        // TODO
+        long pendingEntries;
+        long discardedEntries;
+        int entriesAdded;
+        double avgTime;
+        long min, max;
+        double p50, p90, p99;
 
-        //long pendingEntries;
-        //long discardedEntries;
-        //int entriesAdded;
-        //double avgTime;
-        //long min, max;
-        //double p50, p90, p99;
+        lock (lockObject)
+        {
+            entriesAdded = totalEntriesAdded;
+            pendingEntries = loggerUtilities.PendingEntriesCount;
+            discardedEntries = loggerUtilities.DiscardedEntriesCount;
+            avgTime = totalEntriesAdded > 0 ? (double)totalAddTimeMs / totalEntriesAdded : 0;
+            min = minAddTimeMs == long.MaxValue ? 0 : minAddTimeMs;
+            max = maxAddTimeMs;
 
-        //lock (lockObject)
-        //{
-        //    entriesAdded = totalEntriesAdded;
-        //    pendingEntries = logger.PendingEntriesCount;
-        //    discardedEntries = logger.DiscardedEntriesCount;
-        //    avgTime = totalEntriesAdded > 0 ? (double)totalAddTimeMs / totalEntriesAdded : 0;
-        //    min = minAddTimeMs == long.MaxValue ? 0 : minAddTimeMs;
-        //    max = maxAddTimeMs;
+            // Calculate percentiles
+            if (addTimesMs.Count > 0)
+            {
+                var sortedTimes = new List<long>(addTimesMs);
+                sortedTimes.Sort();
+                p50 = sortedTimes[(int)(sortedTimes.Count * 0.5)];
+                p90 = sortedTimes[(int)(sortedTimes.Count * 0.9)];
+                p99 = sortedTimes[(int)(sortedTimes.Count * 0.99)];
+            }
+            else
+            {
+                p50 = p90 = p99 = 0;
+            }
+        }
 
-        //    // Calculate percentiles
-        //    if (addTimesMs.Count > 0)
-        //    {
-        //        var sortedTimes = new List<long>(addTimesMs);
-        //        sortedTimes.Sort();
-        //        p50 = sortedTimes[(int)(sortedTimes.Count * 0.5)];
-        //        p90 = sortedTimes[(int)(sortedTimes.Count * 0.9)];
-        //        p99 = sortedTimes[(int)(sortedTimes.Count * 0.99)];
-        //    }
-        //    else
-        //    {
-        //        p50 = p90 = p99 = 0;
-        //    }
-        //}
+        var elapsedTime = stopwatchTotal.Elapsed;
+        var entriesPerSecond = elapsedTime.TotalSeconds > 0 ? entriesAdded / elapsedTime.TotalSeconds : 0;
 
-        //var elapsedTime = stopwatchTotal.Elapsed;
-        //var entriesPerSecond = elapsedTime.TotalSeconds > 0 ? entriesAdded / elapsedTime.TotalSeconds : 0;
-
-        //Console.Clear();
-        //Console.WriteLine("==== SQLite Logger Soak Test ====");
-        //Console.WriteLine($"Running for: {elapsedTime:hh\\:mm\\:ss}");
-        //Console.WriteLine($"Entries added: {entriesAdded:N0} ({entriesPerSecond:N2}/sec)");
-        //Console.WriteLine($"Entries pending in cache: {pendingEntries:N0}, discarded entry count: {discardedEntries:N0}");
-        //Console.WriteLine();
-        //Console.WriteLine("Log Entry Add Performance:");
-        //Console.WriteLine($"  Min: {min} ms");
-        //Console.WriteLine($"  Max: {max} ms");
-        //Console.WriteLine($"  Avg: {avgTime:N2} ms");
-        //Console.WriteLine($"  P50: {p50} ms");
-        //Console.WriteLine($"  P90: {p90} ms");
-        //Console.WriteLine($"  P99: {p99} ms");
-        //Console.WriteLine();
-        //Console.WriteLine("Press any key to stop the test...");
+        Console.Clear();
+        Console.WriteLine("==== SQLite Logger Soak Test ====");
+        Console.WriteLine($"Running for: {elapsedTime:hh\\:mm\\:ss}");
+        Console.WriteLine($"Entries added: {entriesAdded:N0} ({entriesPerSecond:N2}/sec)");
+        Console.WriteLine($"Entries pending in cache: {pendingEntries:N0}, discarded entry count: {discardedEntries:N0}");
+        Console.WriteLine();
+        Console.WriteLine("Log Entry Add Performance:");
+        Console.WriteLine($"  Min: {min} ms");
+        Console.WriteLine($"  Max: {max} ms");
+        Console.WriteLine($"  Avg: {avgTime:N2} ms");
+        Console.WriteLine($"  P50: {p50} ms");
+        Console.WriteLine($"  P90: {p90} ms");
+        Console.WriteLine($"  P99: {p99} ms");
+        Console.WriteLine();
+        Console.WriteLine("Press any key to stop the test...");
     }
 
     /// <summary>
@@ -236,56 +237,55 @@ class LoggerSoakTest
     /// </summary>
     private void DisplayFinalStatistics()
     {
-        // TODO
-        //Console.Clear();
-        //Console.WriteLine("==== SQLite Logger Soak Test Results ====");
+        Console.Clear();
+        Console.WriteLine("==== SQLite Logger Soak Test Results ====");
 
-        //var elapsedTime = stopwatchTotal.Elapsed;
-        //int entriesAdded;
-        //long discardedEntries;
-        //double avgTime;
-        //long min, max;
-        //double p50 = 0, p90 = 0, p99 = 0; // Initialize with default values
+        var elapsedTime = stopwatchTotal.Elapsed;
+        int entriesAdded;
+        long discardedEntries;
+        double avgTime;
+        long min, max;
+        double p50 = 0, p90 = 0, p99 = 0; // Initialize with default values
 
-        //lock (lockObject)
-        //{
-        //    entriesAdded = totalEntriesAdded;
-        //    discardedEntries = logger.DiscardedEntriesCount;
-        //    avgTime = totalEntriesAdded > 0 ? (double)totalAddTimeMs / totalEntriesAdded : 0;
-        //    min = minAddTimeMs == long.MaxValue ? 0 : minAddTimeMs;
-        //    max = maxAddTimeMs;
+        lock (lockObject)
+        {
+            entriesAdded = totalEntriesAdded;
+            discardedEntries = loggerUtilities.DiscardedEntriesCount;
+            avgTime = totalEntriesAdded > 0 ? (double)totalAddTimeMs / totalEntriesAdded : 0;
+            min = minAddTimeMs == long.MaxValue ? 0 : minAddTimeMs;
+            max = maxAddTimeMs;
 
-        //    // Calculate percentiles only if we have data
-        //    if (addTimesMs.Count > 0)
-        //    {
-        //        var sortedTimes = new List<long>(addTimesMs);
-        //        sortedTimes.Sort();
-        //        p50 = sortedTimes[(int)(sortedTimes.Count * 0.5)];
-        //        p90 = sortedTimes[(int)(sortedTimes.Count * 0.9)];
-        //        p99 = sortedTimes[(int)(sortedTimes.Count * 0.99)];
+            // Calculate percentiles only if we have data
+            if (addTimesMs.Count > 0)
+            {
+                var sortedTimes = new List<long>(addTimesMs);
+                sortedTimes.Sort();
+                p50 = sortedTimes[(int)(sortedTimes.Count * 0.5)];
+                p90 = sortedTimes[(int)(sortedTimes.Count * 0.9)];
+                p99 = sortedTimes[(int)(sortedTimes.Count * 0.99)];
 
-        //        // Calculate standard deviation
-        //        double mean = sortedTimes.Average();
-        //        double sumOfSquares = sortedTimes.Sum(time => Math.Pow(time - mean, 2));
-        //        double stdDev = Math.Sqrt(sumOfSquares / sortedTimes.Count);
-        //        Console.WriteLine($"Standard Deviation: {stdDev:N2} ms");
-        //    }
-        //}
+                // Calculate standard deviation
+                double mean = sortedTimes.Average();
+                double sumOfSquares = sortedTimes.Sum(time => Math.Pow(time - mean, 2));
+                double stdDev = Math.Sqrt(sumOfSquares / sortedTimes.Count);
+                Console.WriteLine($"Standard Deviation: {stdDev:N2} ms");
+            }
+        }
 
-        //var entriesPerSecond = elapsedTime.TotalSeconds > 0 ? entriesAdded / elapsedTime.TotalSeconds : 0;
+        var entriesPerSecond = elapsedTime.TotalSeconds > 0 ? entriesAdded / elapsedTime.TotalSeconds : 0;
 
-        //Console.WriteLine($"Test duration: {elapsedTime:hh\\:mm\\:ss}");
-        //Console.WriteLine($"Total entries added: {entriesAdded:N0}");
-        //Console.WriteLine($"Total entries discarded: {discardedEntries:N0}");
-        //Console.WriteLine($"Average throughput: {entriesPerSecond:N2} entries/second");
-        //Console.WriteLine();
-        //Console.WriteLine("Log Entry Add Performance:");
-        //Console.WriteLine($"  Minimum time: {min} ms");
-        //Console.WriteLine($"  Maximum time: {max} ms");
-        //Console.WriteLine($"  Average time: {avgTime:N2} ms");
-        //Console.WriteLine($"  Median (P50): {p50} ms");
-        //Console.WriteLine($"  90th percentile: {p90} ms");
-        //Console.WriteLine($"  99th percentile: {p99} ms");
-        //Console.WriteLine();
+        Console.WriteLine($"Test duration: {elapsedTime:hh\\:mm\\:ss}");
+        Console.WriteLine($"Total entries added: {entriesAdded:N0}");
+        Console.WriteLine($"Total entries discarded: {discardedEntries:N0}");
+        Console.WriteLine($"Average throughput: {entriesPerSecond:N2} entries/second");
+        Console.WriteLine();
+        Console.WriteLine("Log Entry Add Performance:");
+        Console.WriteLine($"  Minimum time: {min} ms");
+        Console.WriteLine($"  Maximum time: {max} ms");
+        Console.WriteLine($"  Average time: {avgTime:N2} ms");
+        Console.WriteLine($"  Median (P50): {p50} ms");
+        Console.WriteLine($"  90th percentile: {p90} ms");
+        Console.WriteLine($"  99th percentile: {p99} ms");
+        Console.WriteLine();
     }
 }

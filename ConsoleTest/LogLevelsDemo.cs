@@ -32,11 +32,6 @@ class LogLevelsDemo
         Console.Clear();
         Console.WriteLine("=== Built-in logger demo ===\n");
 
-
-        // Clear existing entries (optional)
-        //int deletedCount = test?.DeleteAll() ?? 0;
-        //logger.LogInformation($"Deleted {deletedCount} existing entries.");
-
         // Add different levels of log entries
         // Add different levels of log entries
         logger.LogTrace("This is a trace message.");

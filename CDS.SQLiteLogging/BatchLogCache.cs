@@ -17,6 +17,7 @@ public class BatchLogCache : IDisposable
     private readonly SemaphoreSlim flushLock = new SemaphoreSlim(1, 1);
     private int pendingEntries;
     private readonly ManualResetEventSlim shutdownEvent = new ManualResetEventSlim(false);
+    private readonly TaskCompletionSource<bool> disposedTcs = new TaskCompletionSource<bool>();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BatchLogCache"/> class.
@@ -62,46 +63,57 @@ public class BatchLogCache : IDisposable
         if (pendingEntries >= maxCacheSize)
         {
             DiscardCount++;
-            return;
+        }
+        else
+        {
+            entryQueue.Enqueue(entry);
+            Interlocked.Increment(ref pendingEntries);
         }
 
-        entryQueue.Enqueue(entry);
-        Interlocked.Increment(ref pendingEntries);
-
-        // If we've reached the batch size, trigger a flush
+        // If we've reached the batch size, trigger a flush asynchronously
+        // But don't wait for it to complete
         if (pendingEntries >= batchSize)
         {
-            // Try to flush but don't block if already flushing
-            if (flushLock.Wait(0))
-            {
-                try
-                {
-                    // Await the flush operation to ensure the lock is held until it completes
-                    FlushAsync().GetAwaiter().GetResult();
-                }
-                finally
-                {
-                    flushLock.Release();
-                }
-            }
+            // Use ConfigureAwait(false) to avoid capturing the synchronization context
+            _ = TryFlushAsync().ConfigureAwait(false);
         }
     }
 
     /// <summary>
     /// Timer callback that triggers a cache flush.
     /// </summary>
-    private void FlushCallback(object state)
+    private void FlushCallback(object? state)
     {
-        // Don't flush if there are no entries or we're already flushing
-        if (pendingEntries == 0 || !flushLock.Wait(0))
+        // Don't start a flush operation if we're disposing
+        if (disposed)
+        {
+            return;
+        }
+
+        // Fire and forget flush - we don't need to wait for it
+        _ = TryFlushAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Tries to flush the cache, but doesn't wait if a flush is already in progress
+    /// </summary>
+    private async Task TryFlushAsync()
+    {
+        // Quick check if there's anything to flush
+        if (pendingEntries == 0 || disposed)
+        {
+            return;
+        }
+
+        // Try to take the lock, but don't block if it's already taken
+        if (!await flushLock.WaitAsync(0).ConfigureAwait(false))
         {
             return;
         }
 
         try
         {
-            // Await the flush operation to ensure the lock is held until it completes
-            FlushAsync().GetAwaiter().GetResult();
+            await FlushAsyncInternal().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -115,12 +127,13 @@ public class BatchLogCache : IDisposable
     }
 
     /// <summary>
-    /// Flushes the cache to the database asynchronously.
+    /// Internal method that handles the actual flush logic
+    /// Assumes the flushLock is already acquired
     /// </summary>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task FlushAsync()
+    private async Task FlushAsyncInternal()
     {
-        if (pendingEntries == 0)
+        // Check if there's anything to flush or if we're disposed
+        if (pendingEntries == 0 || disposed)
         {
             return;
         }
@@ -140,9 +153,6 @@ public class BatchLogCache : IDisposable
         {
             try
             {
-                // Debug info
-                System.Diagnostics.Debug.WriteLine($"Flushing {entries.Count} log entries");
-
                 // Write entries to database in a transaction
                 await logWriter.AddBatchAsync(entries).ConfigureAwait(false);
 
@@ -156,8 +166,32 @@ public class BatchLogCache : IDisposable
                 {
                     entryQueue.Enqueue(entry);
                 }
+
+                // Don't re-adjust the counter since we put the entries back
                 throw;
             }
+        }
+    }
+
+    /// <summary>
+    /// Flushes the cache to the database asynchronously.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    public async Task FlushAsync()
+    {
+        if (disposed)
+        {
+            throw new ObjectDisposedException(nameof(BatchLogCache));
+        }
+
+        await flushLock.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            await FlushAsyncInternal().ConfigureAwait(false);
+        }
+        finally
+        {
+            flushLock.Release();
         }
     }
 
@@ -166,6 +200,11 @@ public class BatchLogCache : IDisposable
     /// </summary>
     public async Task FlushAllAsync()
     {
+        if (disposed)
+        {
+            throw new ObjectDisposedException(nameof(BatchLogCache));
+        }
+
         if (pendingEntries == 0)
         {
             return;
@@ -177,7 +216,7 @@ public class BatchLogCache : IDisposable
             // Keep flushing until the queue is empty
             while (pendingEntries > 0)
             {
-                await FlushAsync().ConfigureAwait(false);
+                await FlushAsyncInternal().ConfigureAwait(false);
             }
         }
         finally
@@ -187,11 +226,47 @@ public class BatchLogCache : IDisposable
     }
 
     /// <summary>
-    /// Flushes all remaining entries synchronously.
+    /// Flushes all remaining entries synchronously. Use with caution as this can cause deadlocks.
+    /// Only safe to call from the Dispose method or in contexts where no other asynchronous operations
+    /// are in progress on this cache instance.
     /// </summary>
     public void FlushAll()
     {
-        FlushAllAsync().GetAwaiter().GetResult();
+        // Only allowed during disposal or in contexts where deadlock won't occur
+        if (disposed)
+        {
+            return;
+        }
+
+        // If we're on a background thread, we can safely block
+        if (pendingEntries > 0)
+        {
+            if (!flushLock.Wait(TimeSpan.FromSeconds(10)))
+            {
+                System.Diagnostics.Debug.WriteLine("Warning: Timed out waiting for flush lock during disposal");
+                return;
+            }
+
+            try
+            {
+                // Keep flushing until the queue is empty or we time out
+                var timeout = DateTime.UtcNow.AddSeconds(30);
+                while (pendingEntries > 0 && DateTime.UtcNow < timeout)
+                {
+                    // Use a separate task but wait synchronously - this avoids deadlocks
+                    // that can occur when using GetAwaiter().GetResult() on the same method
+                    Task.Run(() => FlushAsyncInternal()).Wait();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error during synchronous flush: {ex.Message}");
+            }
+            finally
+            {
+                flushLock.Release();
+            }
+        }
     }
 
     /// <summary>
@@ -209,27 +284,34 @@ public class BatchLogCache : IDisposable
     /// <param name="disposing">Indicates whether the method is called from Dispose.</param>
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposed)
+        if (disposed)
         {
-            if (disposing)
-            {
-                // Stop the timer
-                flushTimer.Dispose();
-
-                // Flush any remaining entries
-                try
-                {
-                    FlushAll();
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error during final log flush: {ex.Message}");
-                }
-
-                flushLock.Dispose();
-                shutdownEvent.Dispose();
-            }
-            disposed = true;
+            return;
         }
+
+        if (disposing)
+        {
+            // Mark as disposed to prevent new entries
+            disposed = true;
+
+            // Stop the timer first to prevent new flush operations
+            flushTimer.Dispose();
+
+            // Flush any remaining entries with timeout protection
+            try
+            {
+                FlushAll();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error during final log flush: {ex.Message}");
+            }
+
+            flushLock.Dispose();
+            shutdownEvent.Dispose();
+        }
+
+        disposed = true;
+        disposedTcs.TrySetResult(true);
     }
 }

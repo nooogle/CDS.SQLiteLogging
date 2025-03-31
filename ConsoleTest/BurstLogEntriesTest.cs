@@ -1,3 +1,4 @@
+using CDS.SQLiteLogging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
@@ -13,12 +14,18 @@ namespace ConsoleTest;
 /// <param name="logger">
 /// A logger, provided by the dependency injection container.
 /// </param>
-class BurstLogEntriesTest(ILogger<BurstLogEntriesTest> logger)
+class BurstLogEntriesTest(ILogger<BurstLogEntriesTest> logger, ISQLiteLoggerUtilities loggerUtilities)
 {
     /// <summary>
     /// A logger, provided by the dependency injection container.
     /// </summary>
     private readonly ILogger<BurstLogEntriesTest> logger = logger;
+
+
+    /// <summary>
+    /// Logger utilities, provided by the dependency injection container.
+    /// </summary>
+    private readonly ISQLiteLoggerUtilities loggerUtilities = loggerUtilities;
 
 
     /// <summary>
@@ -36,10 +43,6 @@ class BurstLogEntriesTest(ILogger<BurstLogEntriesTest> logger)
             Console.WriteLine("Invalid number of entries.");
             return;
         }
-
-        //// Clear existing entries
-        //int deletedCount = logger.DeleteAll(); TODO
-        //Console.WriteLine($"Deleted {deletedCount} existing entries.");
 
         // Start timing the process
         var stopwatch = Stopwatch.StartNew();
@@ -80,7 +83,7 @@ class BurstLogEntriesTest(ILogger<BurstLogEntriesTest> logger)
 
         // Measure flush duration
         var flushStopwatch = Stopwatch.StartNew();
-        // logger.Flush(); TODO
+        loggerUtilities.Flush();
         flushStopwatch.Stop();
 
         // Report flush duration
@@ -89,21 +92,5 @@ class BurstLogEntriesTest(ILogger<BurstLogEntriesTest> logger)
         // Report stats
         Console.WriteLine($"\nTest completed. Added {addedCount} entries in {stopwatch.Elapsed.TotalSeconds:F2} seconds.");
         Console.WriteLine($"Average rate: {addedCount / stopwatch.Elapsed.TotalSeconds:F2} entries/sec.");
-
-        // TODO
-        //// Let user know if any entries were discarded
-        //if(logger.DiscardedEntriesCount > 0)
-        //{
-        //    Console.WriteLine($"*** {logger.DiscardedEntriesCount} entries were discarded due to the cache being full!");
-        //}
-
-        //// Get the size of the database file in MB
-        //long dbFileSizeBytes = logger.GetDatabaseFileSize();
-        //double dbFileSizeMB = dbFileSizeBytes / (1024.0 * 1024.0);
-        //Console.WriteLine($"Database file size before deletion: {dbFileSizeMB:F2} MB");
-
-        //// Clear entries at the end
-        //deletedCount = logger.DeleteAll();
-        //Console.WriteLine($"Deleted {deletedCount} entries at the end of the test.");
     }
 }

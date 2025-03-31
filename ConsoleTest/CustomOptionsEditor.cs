@@ -15,7 +15,8 @@ static class CustomOptionsEditor
     {
         // Display existing options
         Console.WriteLine("Current batching options:");
-        Console.WriteLine($"Batch size: {batchingOptions.MaxCacheSize}");
+        Console.WriteLine($"Batch size: {batchingOptions.BatchSize}");
+        Console.WriteLine($"Cache size: {batchingOptions.MaxCacheSize}");
         Console.WriteLine($"Flush interval: {batchingOptions.FlushInterval}");
         Console.WriteLine();
 
@@ -24,6 +25,14 @@ static class CustomOptionsEditor
         if (!int.TryParse(Console.ReadLine(), out int batchSize) || batchSize <= 0)
         {
             Console.WriteLine("Invalid batch size.");
+            return batchingOptions;
+        }
+
+        // Ask user for the cache size
+        Console.Write("Enter the cache size: ");
+        if (!int.TryParse(Console.ReadLine(), out int cacheSize) || cacheSize <= 0)
+        {
+            Console.WriteLine("Invalid cache size.");
             return batchingOptions;
         }
 
@@ -38,7 +47,8 @@ static class CustomOptionsEditor
         // Setup batching options
         batchingOptions = new()
         {
-            MaxCacheSize = batchSize,
+            BatchSize = batchSize,
+            MaxCacheSize = cacheSize,
             FlushInterval = TimeSpan.FromSeconds(flushIntervalSeconds)
         };
 

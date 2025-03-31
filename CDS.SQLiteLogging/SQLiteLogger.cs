@@ -5,7 +5,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// A facade for SQLite logging operations with caching and batching capabilities.
 /// </summary>
-public class SQLiteLogger : IDisposable
+public class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
 {
     private readonly ConnectionManager connectionManager;
     private readonly LogWriter writer;

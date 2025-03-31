@@ -3,34 +3,6 @@ using Newtonsoft.Json;
 
 namespace CDS.SQLiteLogging.Microsoft;
 
-//// TODO other methods and async varients
-//public interface IMSSQLiteLogger : ILogger
-//{
-//    void Flush();
-
-
-//    /// <summary>
-//    /// Deletes all log entries from the database.
-//    /// </summary>
-//    /// <returns>
-//    /// Number of entries deleted.
-//    /// </returns>
-//    int DeleteAll();
-
-
-//    /// <summary>
-//    /// Gets the size of the database file.
-//    /// </summary>
-//    /// <returns>
-//    /// Size of the database file in bytes.
-//    /// </returns>
-//    long GetDatabaseFileSize();
-
-//    int PendingEntriesCount { get; } 
-
-//    int DiscardedEntriesCount { get; }
-//}
-
 
 /// <summary>
 /// A logger implementation that logs messages to an SQLite database.
