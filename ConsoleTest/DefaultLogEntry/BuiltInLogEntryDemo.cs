@@ -23,8 +23,7 @@ static class BuiltInLogEntryDemo
 
         // Create a new instance of the SQLite Logger class
         using var logger = new SQLiteLogger<LogEntry>(
-            folder,
-            schemaVersion: LogEntry.Version,
+            Path.Combine(folder, $"{nameof(BuiltInLogEntryDemo)}_Schema{MyLogEntry.Version}.db"),
             new BatchingOptions(),
             new HouseKeepingOptions());
 

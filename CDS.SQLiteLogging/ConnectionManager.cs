@@ -2,15 +2,6 @@ using System.Data;
 
 namespace CDS.SQLiteLogging;
 
-#if NET6_0_OR_GREATER
-public enum SqliteErrorCode
-{
-    Busy = 5,
-    Locked = 6,
-    // Add additional codes if needed.
-}
-
-#endif
 
 
 /// <summary>
@@ -18,7 +9,7 @@ public enum SqliteErrorCode
 /// </summary>
 public class ConnectionManager : IDisposable
 {
-    private readonly string dbPath;
+    private readonly string fileName;
     private readonly SqliteConnection connection;
     private bool disposed;
     private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
@@ -27,17 +18,14 @@ public class ConnectionManager : IDisposable
     /// <summary>
     /// Initializes a new instance of the <see cref="ConnectionManager"/> class.
     /// </summary>
-    /// <param name="folder">The folder where the SQLite database file will be located.</param>
-    /// <param name="dbName">The name of the database file (default: "logs.db").</param>
-    public ConnectionManager(string folder, int schemaVersion)
+    /// <param name="fileName">The name of the SQLite database file.</param>
+    public ConnectionManager(string fileName)
     {
-        if (!Directory.Exists(folder))
-        {
-            Directory.CreateDirectory(folder);
-        }
+        var folderPath = Path.GetDirectoryName(fileName);
+        Directory.CreateDirectory(folderPath);
 
-        dbPath = Path.Combine(folder, $"logs_v{schemaVersion}.db");
-        connection = CreateDbConnection(dbPath);
+        this.fileName = fileName;
+        connection = CreateDbConnection(this.fileName);
         connection.Open();
     }
 
@@ -64,7 +52,7 @@ public class ConnectionManager : IDisposable
     /// <summary>
     /// Gets the database file path.
     /// </summary>
-    public string DatabasePath => dbPath;
+    public string DatabasePath => fileName;
 
     /// <summary>
     /// Executes a non-query SQL command.
@@ -83,7 +71,7 @@ public class ConnectionManager : IDisposable
     /// </summary>
     public long GetDatabaseFileSize()
     {
-        FileInfo dbFileInfo = new FileInfo(dbPath);
+        FileInfo dbFileInfo = new FileInfo(fileName);
         return dbFileInfo.Length;
     }
 

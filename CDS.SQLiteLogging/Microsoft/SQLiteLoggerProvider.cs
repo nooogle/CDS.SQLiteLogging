@@ -3,44 +3,90 @@ using System.Collections.Concurrent;
 
 namespace CDS.SQLiteLogging.Microsoft;
 
+/// <summary>
+/// Provides an implementation of <see cref="ILoggerProvider"/> that creates instances of <see cref="MSSQLiteLogger"/>.
+/// </summary>
 public class SQLiteLoggerProvider : ILoggerProvider
 {
+    private readonly SQLiteLogger<LogEntry> sharedLogger;
+    private readonly LoggerExternalScopeProvider scopeProvider = new LoggerExternalScopeProvider();
     private readonly ConcurrentDictionary<string, MSSQLiteLogger> loggers = new();
 
-
-    public SQLiteLoggerProvider()
+    /// <summary>
+    /// Creates a new instance of the <see cref="SQLiteLoggerProvider"/> class.
+    /// </summary>
+    /// <param name="fileName">The name of the SQLite database file.</param>
+    /// <param name="batchingOptions">Options for configuring batch processing.</param>
+    /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
+    private SQLiteLoggerProvider(string fileName, BatchingOptions batchingOptions, HouseKeepingOptions houseKeepingOptions)
     {
+        sharedLogger = new SQLiteLogger<LogEntry>(
+            fileName: fileName,
+            batchingOptions,
+            houseKeepingOptions);
     }
 
+    /// <summary>
+    /// Creates a new instance of <see cref="SQLiteLoggerProvider"/> with the specified file name.
+    /// </summary>
+    /// <param name="fileName">The name of the SQLite database file.</param>
+    /// <returns>A new instance of <see cref="SQLiteLoggerProvider"/>.</returns>
+    public static SQLiteLoggerProvider Create(string fileName)
+    {
+        return new SQLiteLoggerProvider(fileName, new BatchingOptions(), new HouseKeepingOptions());
+    }
+
+    /// <summary>
+    /// Creates a new instance of <see cref="SQLiteLoggerProvider"/> with the specified file name and batching options.
+    /// </summary>
+    /// <param name="fileName">The name of the SQLite database file.</param>
+    /// <param name="batchingOptions">Options for configuring batch processing.</param>
+    /// <returns>A new instance of <see cref="SQLiteLoggerProvider"/>.</returns>
+    public static SQLiteLoggerProvider Create(string fileName, BatchingOptions batchingOptions)
+    {
+        return new SQLiteLoggerProvider(fileName, batchingOptions, new HouseKeepingOptions());
+    }
+
+    /// <summary>
+    /// Creates a new instance of <see cref="SQLiteLoggerProvider"/> with the specified file name, batching options, and housekeeping options.
+    /// </summary>
+    /// <param name="fileName">The name of the SQLite database file.</param>
+    /// <param name="batchingOptions">Options for configuring batch processing.</param>
+    /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
+    /// <returns>A new instance of <see cref="SQLiteLoggerProvider"/>.</returns>
+    public static SQLiteLoggerProvider Create(string fileName, BatchingOptions batchingOptions, HouseKeepingOptions houseKeepingOptions)
+    {
+        return new SQLiteLoggerProvider(fileName, batchingOptions, houseKeepingOptions);
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="ILogger"/> instance for the specified category name.
+    /// </summary>
+    /// <param name="categoryName">The category name for messages produced by the logger.</param>
+    /// <returns>A new <see cref="ILogger"/> instance.</returns>
     public ILogger CreateLogger(string categoryName)
     {
         return loggers.GetOrAdd(categoryName, name => CreateMSSQLiteLogger(name));
     }
 
+    /// <summary>
+    /// Creates a new instance of <see cref="MSSQLiteLogger"/> for the specified category name.
+    /// </summary>
+    /// <param name="categoryName">The category name for messages produced by the logger.</param>
+    /// <returns>A new instance of <see cref="MSSQLiteLogger"/>.</returns>
     private MSSQLiteLogger CreateMSSQLiteLogger(string categoryName)
     {
-        // TODO this needs to be a filename, and via a callback!
-
-        string folderPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            nameof(SQLiteLogging));
-
-        var sqliteLogger = new SQLiteLogger<LogEntry>(
-            folder: folderPath,
-            schemaVersion: LogEntry.Version,
-            batchingOptions: new BatchingOptions(), // todo allow custom options
-            houseKeepingOptions: new HouseKeepingOptions()); // todo allow custom options
-
-        var scopeProvider = new LoggerExternalScopeProvider();
-
         var msSQLiteLogger = new MSSQLiteLogger(
-            categoryName: categoryName, 
-            logger: sqliteLogger, 
+            categoryName: categoryName,
+            logger: sharedLogger,
             scopeProvider: scopeProvider);
 
         return msSQLiteLogger;
     }
 
+    /// <summary>
+    /// Disposes the provider and all created loggers.
+    /// </summary>
     public void Dispose()
     {
         foreach (var msLogger in loggers.Values)

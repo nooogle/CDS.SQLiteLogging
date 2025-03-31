@@ -44,8 +44,7 @@ sealed class LoggerSoakTest
         };
 
         logger = new SQLiteLogger<MyLogEntry>(
-            folder,
-            schemaVersion: MyLogEntry.Version,
+            Path.Combine(folder, $"{nameof(LoggerSoakTest)}_Schema{MyLogEntry.Version}.db"),
             batchingOptions,
             houseKeepingOptions);
 

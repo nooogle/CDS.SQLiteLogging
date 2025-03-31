@@ -51,8 +51,7 @@ static class BurstLogEntriesTest
 
         // Create a new instance of the SQLite Logger class
         using var logger = new SQLiteLogger<MyLogEntry>(
-            folder,
-            schemaVersion: MyLogEntry.Version,
+            Path.Combine(folder, $"{nameof(BurstLogEntriesTest)}_Schema{MyLogEntry.Version}.db"),
             batchingOptions,
             new HouseKeepingOptions());
 

@@ -23,8 +23,7 @@ static class AdHocTests
 
         // Create a new instance of the SQLite Logger class
         using var logger = new SQLiteLogger<MyLogEntry>(
-            folder,
-            schemaVersion: MyLogEntry.Version,
+            Path.Combine(folder, $"{nameof(AdHocTests)}_Schema{MyLogEntry.Version}.db"),
             new BatchingOptions(),
             new HouseKeepingOptions());
 

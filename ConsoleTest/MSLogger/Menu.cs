@@ -6,7 +6,7 @@ sealed class Menu
     {
         new CDS.CLIMenus.Basic.MenuBuilder("Default log entry")
                        
-            .AddItem("Test", Test1.Run)
+            .AddItem("Bread factory simulation", () => new BreadFactorySimulator.Factory().Run())
             
             .Build()
             .Run();

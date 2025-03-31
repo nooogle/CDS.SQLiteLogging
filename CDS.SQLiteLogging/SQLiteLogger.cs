@@ -32,18 +32,16 @@ public class SQLiteLogger<TLogEntry> : IDisposable where TLogEntry : ILogEntry, 
     /// <summary>
     /// Initializes a new instance of the <see cref="SQLiteLogger{TLogEntry}"/> class.
     /// </summary>
-    /// <param name="folder">The folder where the SQLite database file will be located.</param>
+    /// <param name="fileName">The name of the SQLite database file.</param>
     /// <param name="batchingOptions">Options for configuring batch processing.</param>
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
-    /// <param name="schemaVersion">The version of the log schema, used in the database filename to help avoid reading or writing to a mismatched schema.</param>
     public SQLiteLogger(
-        string folder,
-        int schemaVersion,
+        string fileName,
         BatchingOptions batchingOptions = null,
         HouseKeepingOptions houseKeepingOptions = null)
     {
         // Initialize connection manager
-        connectionManager = new ConnectionManager(folder, schemaVersion: schemaVersion);
+        connectionManager = new ConnectionManager(fileName);
 
         // Create type mapping
         var properties = typeof(TLogEntry).GetProperties();
