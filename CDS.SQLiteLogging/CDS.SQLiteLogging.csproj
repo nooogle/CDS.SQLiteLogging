@@ -10,10 +10,14 @@
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <Title>SQLite logging</Title>
-    <Description>Library for logging using an SQlite backend</Description>
+    <Description>Library for logging using an SQLite backend</Description>
     <Authors>Jon Shadforth</Authors>
     <Company>Carpe Diem Systems</Company>
     <Copyright>Copyright (c) 2025 Carpe Diem Systems</Copyright>
+    <PackageTags>logging, sqlite, database</PackageTags>
+    <PackageProjectUrl>https://github.com/nooogle/CDS.SQLiteLogging</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/nooogle/CDS.SQLiteLogging</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
