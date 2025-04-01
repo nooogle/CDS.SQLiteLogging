@@ -4,32 +4,41 @@ on:
   push:
     branches: [ master ]
     tags:
-      - 'v*'
+      - 'v*' # Trigger on version tags like v1.0, v2.3.4
   pull_request:
     branches: [ master ]
 
 jobs:
-  build:
-    runs-on: windows-latest
+  build_test_pack: # Renamed job for clarity
+    runs-on: windows-latest # Sticking with Windows as per original config
+    # Optional: Define permissions if you later publish to GitHub Packages
+    # permissions:
+    #   contents: read
+    #   packages: write # Needed to publish to GitHub Packages
 
     steps:
     - name: Checkout code (full history + tags)
-      uses: actions/checkout@v2
+      # Use the latest major version (v4 as of writing)
+      uses: actions/checkout@v4
       with:
-        fetch-depth: 0
+        fetch-depth: 0 # Fetches all history for all branches and tags - necessary for versioning tools if you add them
         fetch-tags: true
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v2
+    - name: Setup .NET 8
+      # Use the latest major version (v4 as of writing)
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '8.0.x' # Specifies .NET 8
 
     - name: Cache NuGet packages
-      uses: actions/cache@v2
+      # Use the latest major version (v4 as of writing)
+      uses: actions/cache@v4
       with:
         path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        # Include solution file hash in the key for more robust cache invalidation
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.sln') }}-${{ hashFiles('**/*.csproj') }}
         restore-keys: |
+          ${{ runner.os }}-nuget-${{ hashFiles('**/*.sln') }}-
           ${{ runner.os }}-nuget-
 
     - name: Restore dependencies
@@ -37,6 +46,45 @@ jobs:
 
     - name: Build solution
       run: dotnet build --no-restore --configuration Release
+      # Optional: Add versioning here if using tools like Nerdbank.GitVersioning or MinVer
+      # run: dotnet build --no-restore --configuration Release /p:Version=YourVersionInfo
 
     - name: Run unit tests
-      run: dotnet test --no-build --configuration Release --logger trx --results-directory ./test-results
+      run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=test-results.trx" --results-directory ./test-results
+      # Using a predictable filename for easier upload
+
+    - name: Pack projects (only on tag pushes)
+      # This step only runs when a tag starting with 'v' is pushed
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: dotnet pack --no-build --configuration Release --output ./artifacts/packages
+      # Optional: Add version suffix for prereleases or use version info from build step
+      # run: dotnet pack --no-build --configuration Release --output ./artifacts/packages /p:Version=YourVersionInfo
+
+    - name: Upload Test Results
+      # Use the latest major version (v4 as of writing)
+      uses: actions/upload-artifact@v4
+      # Always run this step, but only if the previous steps succeed (default behavior)
+      # Optional: use `if: always()` to upload even if tests fail
+      with:
+        name: test-results-${{ runner.os }} # Artifact name
+        path: ./test-results/**/*.trx # Path to the test results files
+
+    - name: Upload NuGet Packages (only on tag pushes)
+      # This step only runs when a tag starting with 'v' is pushed
+      if: startsWith(github.ref, 'refs/tags/v')
+      # Use the latest major version (v4 as of writing)
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages # Artifact name
+        path: ./artifacts/packages/**/*.nupkg # Path to the generated NuGet packages
+
+    # --- Optional: Add Steps to Publish Packages ---
+    # - name: Publish NuGet packages to GitHub Packages (only on tag pushes)
+    #   if: startsWith(github.ref, 'refs/tags/v')
+    #   run: dotnet nuget push "./artifacts/packages/**/*.nupkg" --api-key ${{ secrets.GITHUB_TOKEN }} --source "https://nuget.pkg.github.com/YOUR_GITHUB_USERNAME_OR_ORG/index.json" --skip-duplicate
+    #   # Ensure you have set the 'permissions' block for the job if using GITHUB_TOKEN
+
+    # - name: Publish NuGet packages to NuGet.org (only on tag pushes)
+    #   if: startsWith(github.ref, 'refs/tags/v')
+    #   run: dotnet nuget push "./artifacts/packages/**/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source "https://api.nuget.org/v3/index.json" --skip-duplicate
+    #   # Ensure you have created a NUGET_API_KEY secret in your repository settings
