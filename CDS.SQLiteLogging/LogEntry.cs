@@ -6,7 +6,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Represents a log entry.
 /// </summary>
-class LogEntry
+public class LogEntry
 {
     /// <summary>
     /// Stores the message parameters for structured logging.

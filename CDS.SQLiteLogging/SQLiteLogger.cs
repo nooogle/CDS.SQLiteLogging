@@ -66,11 +66,7 @@ class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
     /// <param name="entry">The log entry to add.</param>
     public void Add(LogEntry entry)
     {
-        bool shouldIgnore = false;
-        if (shouldIgnore)
-        {
-            return;
-        }
+        //this.writer.Add(entry);
 
         logCache.Add(entry);
     }
@@ -220,5 +216,9 @@ class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
     /// Returns the number of log entries that have been discarded due to cache overflow.
     /// </summary>
     public int DiscardedEntriesCount => logCache.DiscardCount;
+
+
+    /// <inheritdoc/>
+    public void ResetDiscardedEntriesCount() => logCache.ResetDiscardCount();
 }
 

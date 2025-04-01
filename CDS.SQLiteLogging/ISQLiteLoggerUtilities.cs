@@ -59,4 +59,10 @@ public interface ISQLiteLoggerUtilities
     /// The number of log entries that have been discarded because the cache was full.
     /// </summary>
     int DiscardedEntriesCount { get; }
+
+
+    /// <summary>
+    /// Resets the count of discarded log entries.
+    /// </summary>
+    void ResetDiscardedEntriesCount();
 }

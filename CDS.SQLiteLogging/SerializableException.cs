@@ -3,7 +3,7 @@
 /// <summary>
 /// Represents a serializable exception.
 /// </summary>
-class SerializableException
+public class SerializableException
 {
     /// <summary>
     /// Gets or sets the type of the exception.

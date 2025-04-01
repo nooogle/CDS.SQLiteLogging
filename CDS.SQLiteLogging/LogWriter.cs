@@ -1,11 +1,12 @@
 using System.Reflection;
+using System.Text;
 
 namespace CDS.SQLiteLogging;
 
 /// <summary>
 /// Writes log entries to an SQLite database.
 /// </summary>
-class LogWriter
+public class LogWriter
 {
     private readonly ConnectionManager connectionManager;
     private readonly string tableName;

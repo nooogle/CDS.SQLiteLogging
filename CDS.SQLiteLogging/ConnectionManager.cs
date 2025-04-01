@@ -7,7 +7,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Manages the SQLite database connection.
 /// </summary>
-class ConnectionManager : IDisposable
+public class ConnectionManager : IDisposable
 {
     private readonly string fileName;
     private readonly SqliteConnection connection;

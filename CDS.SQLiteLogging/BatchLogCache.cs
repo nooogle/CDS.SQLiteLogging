@@ -90,14 +90,15 @@ class BatchLogCache : IDisposable
             return;
         }
 
-        // Fire and forget flush - we don't need to wait for it
-        _ = TryFlushAsync().ConfigureAwait(false);
+        // Fire and forget full flush for timer-based flushes
+        _ = TryFlushAsync(flushAll: true).ConfigureAwait(false);
     }
 
     /// <summary>
     /// Tries to flush the cache, but doesn't wait if a flush is already in progress
     /// </summary>
-    private async Task TryFlushAsync()
+    /// <param name="flushAll">Whether to flush all entries or just a batch</param>
+    private async Task TryFlushAsync(bool flushAll = false)
     {
         // Quick check if there's anything to flush
         if (pendingEntries == 0 || disposed)
@@ -113,7 +114,7 @@ class BatchLogCache : IDisposable
 
         try
         {
-            await FlushAsyncInternal().ConfigureAwait(false);
+            await FlushAsyncInternal(flushAll).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -130,7 +131,8 @@ class BatchLogCache : IDisposable
     /// Internal method that handles the actual flush logic
     /// Assumes the flushLock is already acquired
     /// </summary>
-    private async Task FlushAsyncInternal()
+    /// <param name="flushAll">Whether to flush all entries or just a batch</param>
+    private async Task FlushAsyncInternal(bool flushAll = false)
     {
         // Check if there's anything to flush or if we're disposed
         if (pendingEntries == 0 || disposed)
@@ -138,12 +140,14 @@ class BatchLogCache : IDisposable
             return;
         }
 
+        int totalToProcess = flushAll ? pendingEntries : Math.Min(batchSize, pendingEntries);
+
         // Take a snapshot of entries to process
-        var entries = new List<LogEntry>(Math.Min(batchSize, pendingEntries));
+        var entries = new List<LogEntry>(totalToProcess);
         int processed = 0;
 
-        // Dequeue entries up to batch size
-        while (processed < batchSize && entryQueue.TryDequeue(out var entry))
+        // Dequeue entries up to the determined amount
+        while (processed < totalToProcess && entryQueue.TryDequeue(out var entry))
         {
             entries.Add(entry);
             processed++;
@@ -313,5 +317,14 @@ class BatchLogCache : IDisposable
 
         disposed = true;
         disposedTcs.TrySetResult(true);
+    }
+
+
+    /// <summary>
+    /// Resets the discard count to zero.
+    /// </summary>
+    public void ResetDiscardCount()
+    {
+        DiscardCount = 0;
     }
 }
