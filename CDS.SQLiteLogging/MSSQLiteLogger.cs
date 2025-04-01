@@ -17,26 +17,26 @@ public class MSSQLiteLogger : ILogger, IDisposable
 
 
     private readonly string categoryName;
-    private readonly SQLiteLogger logger;
+    private readonly SQLiteWriter sqliteWriter;
     private readonly IExternalScopeProvider scopeProvider;
 
     /// <inheritdoc/>
-    public int PendingEntriesCount => logger.PendingEntriesCount;
+    public int PendingEntriesCount => sqliteWriter.PendingEntriesCount;
 
     /// <inheritdoc/>
-    public int DiscardedEntriesCount => logger.DiscardedEntriesCount;
+    public int DiscardedEntriesCount => sqliteWriter.DiscardedEntriesCount;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MSSQLiteLogger"/> class.
     /// </summary>
     /// <param name="categoryName">The category name for the logger.</param>
-    /// <param name="logger">The SQLite logger instance.</param>
+    /// <param name="sqliteWriter">The SQLite logger instance.</param>
     /// <param name="scopeProvider">The scope provider for managing logging scopes.</param>
     /// <exception cref="ArgumentNullException">Thrown if any required parameter is null.</exception>
-    internal MSSQLiteLogger(string categoryName, SQLiteLogger logger, IExternalScopeProvider scopeProvider)
+    internal MSSQLiteLogger(string categoryName, SQLiteWriter sqliteWriter, IExternalScopeProvider scopeProvider)
     {
         this.categoryName = categoryName ?? throw new ArgumentNullException(nameof(categoryName));
-        this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this.sqliteWriter = sqliteWriter ?? throw new ArgumentNullException(nameof(sqliteWriter));
         this.scopeProvider = scopeProvider ?? throw new ArgumentNullException(nameof(scopeProvider));
     }
 
@@ -45,7 +45,7 @@ public class MSSQLiteLogger : ILogger, IDisposable
     /// </summary>
     public void Dispose()
     {
-        logger.Dispose();
+        sqliteWriter.Dispose();
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ public class MSSQLiteLogger : ILogger, IDisposable
             ex: exception,
             scopesJson: scopesJson);
 
-        logger.Add(logEntry);
+        sqliteWriter.Add(logEntry);
     }
 
     /// <summary>
@@ -199,12 +199,12 @@ public class MSSQLiteLogger : ILogger, IDisposable
     /// <inheritdoc/>
     public int DeleteAll()
     {
-        return logger.DeleteAll();
+        return sqliteWriter.DeleteAll();
     }
 
     /// <inheritdoc/>
     public long GetDatabaseFileSize()
     {
-        return logger.GetDatabaseFileSize();
+        return sqliteWriter.GetDatabaseFileSize();
     }
 }

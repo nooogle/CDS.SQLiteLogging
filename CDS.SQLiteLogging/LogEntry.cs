@@ -9,6 +9,12 @@ namespace CDS.SQLiteLogging;
 public class LogEntry
 {
     /// <summary>
+    /// Returns a string that represents the current object.
+    /// </summary>
+    public override string ToString() => $"[{Timestamp.ToLocalTime():yyyy-MM-dd HH:mm:ss.fff}] {RenderedMessage}";
+
+
+    /// <summary>
     /// Stores the message parameters for structured logging.
     /// </summary>
     private Dictionary<string, object>? properties = null;

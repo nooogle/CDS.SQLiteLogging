@@ -2,7 +2,7 @@ using CDS.SQLiteLogging;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
-namespace ConsoleTest;
+namespace ConsoleTest.WriterDemos;
 
 /// <summary>
 /// Provides soak testing capabilities for the SqliteLogger.
@@ -10,7 +10,7 @@ namespace ConsoleTest;
 class LoggerSoakTest
 {
     private readonly ILogger logger;
-    private readonly ISQLiteLoggerUtilities loggerUtilities;
+    private readonly ISQLiteWriterUtilities loggerUtilities;
     private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
     private readonly List<long> addTimesMs = new List<long>();
     private readonly Stopwatch stopwatchTotal = new Stopwatch();
@@ -26,7 +26,7 @@ class LoggerSoakTest
     /// </summary>
     /// <param name="folder">The folder where the logs will be stored.</param>
     /// <param name="entriesPerSecond">The number of log entries to add per second.</param>
-    public LoggerSoakTest(ILogger<LoggerSoakTest> logger, ISQLiteLoggerUtilities loggerUtilities)
+    public LoggerSoakTest(ILogger<LoggerSoakTest> logger, ISQLiteWriterUtilities loggerUtilities)
     {
         this.logger = logger;
         this.loggerUtilities = loggerUtilities;

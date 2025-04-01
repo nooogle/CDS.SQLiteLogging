@@ -9,15 +9,15 @@ namespace CDS.SQLiteLogging;
 /// </summary>
 public class SQLiteLoggerProvider : ILoggerProvider
 {
-    private readonly SQLiteLogger sharedLogger;
+    private readonly SQLiteWriter sharedLoggerWriter;
     private readonly LoggerExternalScopeProvider scopeProvider = new LoggerExternalScopeProvider();
     private readonly ConcurrentDictionary<string, MSSQLiteLogger> loggers = new();
 
 
     /// <summary>
-    /// Gets the <see cref="ISQLiteLoggerUtilities"/> instance for this provider.
+    /// Gets the <see cref="ISQLiteWriterUtilities"/> instance for this provider.
     /// </summary>
-    public ISQLiteLoggerUtilities LoggerUtilities => sharedLogger;
+    public ISQLiteWriterUtilities LoggerUtilities => sharedLoggerWriter;
 
 
     /// <summary>
@@ -28,7 +28,7 @@ public class SQLiteLoggerProvider : ILoggerProvider
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
     private SQLiteLoggerProvider(string fileName, BatchingOptions batchingOptions, HouseKeepingOptions houseKeepingOptions)
     {
-        sharedLogger = new SQLiteLogger(
+        sharedLoggerWriter = new SQLiteWriter(
             fileName: fileName,
             batchingOptions,
             houseKeepingOptions);
@@ -86,7 +86,7 @@ public class SQLiteLoggerProvider : ILoggerProvider
     {
         var msSQLiteLogger = new MSSQLiteLogger(
             categoryName: categoryName,
-            logger: sharedLogger,
+            sqliteWriter: sharedLoggerWriter,
             scopeProvider: scopeProvider);
 
         return msSQLiteLogger;

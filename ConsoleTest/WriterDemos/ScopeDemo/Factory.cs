@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace ConsoleTest.ScopeDemo;
+namespace ConsoleTest.WriterDemos.ScopeDemo;
 
 /// <summary>
 /// Represents a factory that simulates bread production.

@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace CDS.SQLiteLogging;
+namespace CDS.SQLiteLogging.Internal;
 
 /// <summary>
 /// Provides caching and batch processing capabilities for log entries.
@@ -36,8 +36,8 @@ class BatchLogCache : IDisposable
     public BatchLogCache(LogWriter logWriter, BatchingOptions options)
     {
         this.logWriter = logWriter ?? throw new ArgumentNullException(nameof(logWriter));
-        this.batchSize = options?.BatchSize ?? throw new ArgumentNullException(nameof(options));
-        this.maxCacheSize = options.MaxCacheSize;
+        batchSize = options?.BatchSize ?? throw new ArgumentNullException(nameof(options));
+        maxCacheSize = options.MaxCacheSize;
 
         // Create and start the dedicated processing thread
         processingThread = new Thread(ProcessEntriesLoop)

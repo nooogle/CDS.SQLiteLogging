@@ -1,40 +1,39 @@
+using CDS.SQLiteLogging.Internal;
+
 namespace CDS.SQLiteLogging;
 
 /// <summary>
-/// Provides automated housekeeping for log entries, periodically deleting old records.
+/// Provides housekeeping for log entries, periodically deleting old records.
 /// </summary>
-class LogHousekeeper : IDisposable
+public class Housekeeper : IDisposable
 {
     private readonly ConnectionManager connectionManager;
-    private readonly string tableName;
-    private readonly Timer cleanupTimer;
+    private Timer? cleanupTimer;
     private bool disposed;
-    private TimeSpan retentionPeriod;
+    private readonly HouseKeepingOptions options;
     private int cleanupInProgress;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="LogHousekeeper"/> class.
+    /// Initializes a new instance of the <see cref="Housekeeper"/> class.
     /// </summary>
     /// <param name="connectionManager">The SQLite connection manager.</param>
-    /// <param name="tableName">The name of the table to maintain.</param>
-    /// <param name="retentionPeriod">How long to keep entries before deleting them.</param>
-    /// <param name="cleanupInterval">How often to run the cleanup process.</param>
-    public LogHousekeeper(
+    /// <param name="options">The housekeeping configuration options.</param>
+    public Housekeeper(
         ConnectionManager connectionManager,
-        string tableName,
-        TimeSpan retentionPeriod,
-        TimeSpan cleanupInterval)
+        HouseKeepingOptions options)
     {
-        this.connectionManager = connectionManager;
-        this.tableName = tableName;
-        this.retentionPeriod = retentionPeriod;
+        this.connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
+        this.options = options ?? throw new ArgumentNullException(nameof(options));
 
-        // Start the timer to run cleanup at the specified interval
-        cleanupTimer = new Timer(
-            CleanupCallback,
-            null,
-            TimeSpan.Zero,  // Start immediately
-            cleanupInterval);
+        // Start the timer only if in automatic mode
+        if (options.Mode == HousekeepingMode.Automatic)
+        {
+            cleanupTimer = new Timer(
+                CleanupCallback,
+                null,
+                TimeSpan.Zero,  // Start immediately
+                options.CleanupInterval);
+        }
     }
 
     /// <summary>
@@ -42,8 +41,31 @@ class LogHousekeeper : IDisposable
     /// </summary>
     public TimeSpan RetentionPeriod
     {
-        get => retentionPeriod;
-        set => retentionPeriod = value;
+        get => options.RetentionPeriod;
+        set => options.RetentionPeriod = value;
+    }
+
+    /// <summary>
+    /// Gets the current housekeeping mode.
+    /// </summary>
+    public HousekeepingMode Mode => options.Mode;
+
+    /// <summary>
+    /// Executes a housekeeping cycle that removes old entries.
+    /// Can be called manually regardless of the housekeeping mode.
+    /// </summary>
+    /// <returns>The number of entries deleted.</returns>
+    public int ExecuteHousekeeping()
+    {
+        try
+        {
+            return DeleteEntriesOlderThan(DateTimeOffset.Now - options.RetentionPeriod);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error during manual log cleanup: {ex.Message}");
+            throw;
+        }
     }
 
     /// <summary>
@@ -61,7 +83,7 @@ class LogHousekeeper : IDisposable
 
         try
         {
-            DeleteEntriesOlderThan(DateTimeOffset.Now - retentionPeriod);
+            DeleteEntriesOlderThan(DateTimeOffset.Now - options.RetentionPeriod);
         }
         catch (Exception ex)
         {
@@ -86,7 +108,7 @@ class LogHousekeeper : IDisposable
         connectionManager.ExecuteInTransaction(transaction =>
         {
             string formattedDate = cutoffDate.ToString("o"); // ISO 8601 format
-            string sql = $"DELETE FROM {tableName} WHERE Timestamp < @cutoffDate";
+            string sql = $"DELETE FROM {TableCreator.TableName} WHERE Timestamp < @cutoffDate";
 
             using var cmd = new SqliteCommand(sql, connectionManager.Connection, transaction);
             cmd.Parameters.AddWithValue("@cutoffDate", formattedDate);
@@ -106,7 +128,7 @@ class LogHousekeeper : IDisposable
 
         connectionManager.ExecuteInTransaction(transaction =>
         {
-            string sql = $"DELETE FROM {tableName}";
+            string sql = $"DELETE FROM {TableCreator.TableName}";
 
             using var cmd = new SqliteCommand(sql, connectionManager.Connection, transaction);
             deletedCount = cmd.ExecuteNonQuery();
@@ -114,6 +136,7 @@ class LogHousekeeper : IDisposable
 
         return deletedCount;
     }
+
 
     /// <summary>
     /// Disposes resources used by the housekeeper.
@@ -136,8 +159,10 @@ class LogHousekeeper : IDisposable
             {
                 // Stop the timer
                 cleanupTimer?.Dispose();
+                cleanupTimer = null;
             }
             disposed = true;
         }
     }
 }
+

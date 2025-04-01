@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace ConsoleTest;
+namespace ConsoleTest.WriterDemos;
 
 /// <summary>
 /// Contains ad-hoc tests for the SQLite Logger.

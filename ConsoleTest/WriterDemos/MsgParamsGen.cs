@@ -1,4 +1,4 @@
-﻿namespace ConsoleTest;
+﻿namespace ConsoleTest.WriterDemos;
 
 /// <summary>
 /// Provides methods to generate random parameters such as person names and fruit names.

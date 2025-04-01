@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Text;
 
-namespace CDS.SQLiteLogging;
+namespace CDS.SQLiteLogging.Internal;
 
 /// <summary>
 /// Writes log entries to an SQLite database.

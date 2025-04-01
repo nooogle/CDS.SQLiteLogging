@@ -6,6 +6,12 @@ namespace CDS.SQLiteLogging;
 public class HouseKeepingOptions
 {
     /// <summary>
+    /// Gets or sets the housekeeping mode.
+    /// </summary>
+    public HousekeepingMode Mode { get; set; } = HousekeepingMode.Automatic;
+
+
+    /// <summary>
     /// Gets or sets the retention period for log entries.
     /// </summary>
     public TimeSpan RetentionPeriod { get; set; } = TimeSpan.FromDays(30);

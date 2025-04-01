@@ -1,6 +1,6 @@
 ﻿using CDS.SQLiteLogging;
 
-namespace ConsoleTest;
+namespace ConsoleTest.WriterDemos;
 
 /// <summary>
 /// Contains methods for getting custom options from the user.

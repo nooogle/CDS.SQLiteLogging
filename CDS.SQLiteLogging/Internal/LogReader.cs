@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Immutable;
 using System.Reflection;
 
-namespace CDS.SQLiteLogging;
+namespace CDS.SQLiteLogging.Internal;
 
 
 /// <summary>

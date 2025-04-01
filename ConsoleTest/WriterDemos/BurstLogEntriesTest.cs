@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
-namespace ConsoleTest;
+namespace ConsoleTest.WriterDemos;
 
 /// <summary>
 /// Contains a test for adding a burst of log entries.
@@ -14,7 +14,7 @@ namespace ConsoleTest;
 /// <param name="logger">
 /// A logger, provided by the dependency injection container.
 /// </param>
-class BurstLogEntriesTest(ILogger<BurstLogEntriesTest> logger, ISQLiteLoggerUtilities loggerUtilities)
+class BurstLogEntriesTest(ILogger<BurstLogEntriesTest> logger, ISQLiteWriterUtilities loggerUtilities)
 {
     /// <summary>
     /// A logger, provided by the dependency injection container.
@@ -25,7 +25,7 @@ class BurstLogEntriesTest(ILogger<BurstLogEntriesTest> logger, ISQLiteLoggerUtil
     /// <summary>
     /// Logger utilities, provided by the dependency injection container.
     /// </summary>
-    private readonly ISQLiteLoggerUtilities loggerUtilities = loggerUtilities;
+    private readonly ISQLiteWriterUtilities loggerUtilities = loggerUtilities;
 
 
     /// <summary>

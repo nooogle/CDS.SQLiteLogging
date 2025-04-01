@@ -5,7 +5,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Provides utility methods for managing an SQLite log database.
 /// </summary>
-public interface ISQLiteLoggerUtilities
+public interface ISQLiteWriterUtilities
 {
     /// <summary>
     /// Waits until the cache is empty. This is useful when you want 
