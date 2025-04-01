@@ -111,8 +111,8 @@ public class ConnectionManager : IDisposable
 
 
 #if NET6_0_OR_GREATER
-                    catch (SqliteException ex) when ((SqliteErrorCode)ex.SqliteErrorCode == SqliteErrorCode.Busy ||
-                                                     (SqliteErrorCode)ex.SqliteErrorCode == SqliteErrorCode.Locked)
+                    catch (SqliteException ex) when ((Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Busy ||
+                                                     (Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Locked)
 #else
                     catch (SqliteException ex) when (ex.ResultCode == SqliteErrorCode.Busy ||
                                                      ex.ResultCode == SqliteErrorCode.Locked)
@@ -162,8 +162,8 @@ public class ConnectionManager : IDisposable
                     }
 
 #if NET6_0_OR_GREATER
-                    catch (SqliteException ex) when ((SqliteErrorCode)ex.SqliteErrorCode == SqliteErrorCode.Busy ||
-                                                     (SqliteErrorCode)ex.SqliteErrorCode == SqliteErrorCode.Locked)
+                    catch (SqliteException ex) when ((Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Busy ||
+                                                     (Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Locked)
 #else
                 catch (SqliteException ex) when (ex.ResultCode == SqliteErrorCode.Busy ||
                                                  ex.ResultCode == SqliteErrorCode.Locked)
@@ -205,8 +205,8 @@ public class ConnectionManager : IDisposable
                     return;
                 }
 #if NET6_0_OR_GREATER
-                catch (SqliteException ex) when (((SqliteErrorCode)ex.SqliteErrorCode == SqliteErrorCode.Busy ||
-                                                 (SqliteErrorCode)ex.SqliteErrorCode == SqliteErrorCode.Locked) &&
+                catch (SqliteException ex) when (((Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Busy ||
+                                                 (Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Locked) &&
                                                  retries < 3)
 #else
                     catch (SqliteException ex) when ((ex.ResultCode == SqliteErrorCode.Busy ||

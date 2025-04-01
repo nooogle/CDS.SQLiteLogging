@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Text;
 
-namespace CDS.SQLiteLogging;
+namespace CDS.SQLiteLogging.Internal;
 
 /// <summary>
 /// A lightweight, high-performance formatter for structured log messages.

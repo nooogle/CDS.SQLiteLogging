@@ -10,7 +10,7 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
 {
     private readonly ConnectionManager connectionManager;
     private readonly LogWriter writer;
-    private readonly Housekeeper housekeeper;
+    private readonly SQLiteHousekeeper housekeeper;
     private readonly BatchLogCache logCache;
     private bool disposed;
 
@@ -41,7 +41,7 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
 
         // Initialize housekeeper with defaults if not specified
         houseKeepingOptions ??= new HouseKeepingOptions();
-        housekeeper = new Housekeeper(
+        housekeeper = new SQLiteHousekeeper(
             connectionManager,
             houseKeepingOptions);
     }
@@ -49,7 +49,7 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
     /// <summary>
     /// Gets the log housekeeper instance.
     /// </summary>
-    public Housekeeper Housekeeper => housekeeper;
+    public SQLiteHousekeeper Housekeeper => housekeeper;
 
     /// <summary>
     /// Gets the number of entries currently pending in the cache.

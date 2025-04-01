@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace ConsoleTest.WriterDemos.ScopeDemo;
+namespace ConsoleTest.DIWriterDemos.ScopeDemo;
 
 /// <summary>
 /// Represents an oven system that bakes bread.
@@ -42,7 +42,7 @@ class OvenSystem
     /// <param name="loafIndex">The index of the loaf being cooked.</param>
     private void CookOneLoafOfBread(Random random, int loafIndex)
     {
-        using var scope = logger.BeginScope($"Loaf {loafIndex + 1}");
+        using var scope = logger.BeginScope("Loaf {index}", loafIndex + 1);
         logger.LogInformation("Mixing {flour_g} g flour and {water_g} g water", random.Next(900, 1100), random.Next(650, 750));
         logger.LogInformation("Baking loaf for {bake_time} minutes", random.Next(25, 35));
     }

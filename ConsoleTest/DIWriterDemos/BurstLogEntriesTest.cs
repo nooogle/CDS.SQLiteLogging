@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
-namespace ConsoleTest.WriterDemos;
+namespace ConsoleTest.DIWriterDemos;
 
 /// <summary>
 /// Contains a test for adding a burst of log entries.
@@ -79,7 +79,7 @@ class BurstLogEntriesTest(ILogger<BurstLogEntriesTest> logger, ISQLiteWriterUtil
         stopwatch.Stop();
 
         // Notify user that flush is starting
-        Console.WriteLine("Starting flush...");
+        Console.WriteLine("Waiting for any cached entries to be flusehed to the database...");
 
         // Measure flush duration
         var flushStopwatch = Stopwatch.StartNew();

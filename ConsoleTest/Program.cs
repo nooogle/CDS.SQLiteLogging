@@ -16,7 +16,9 @@ class Program
         {
 
             new CDS.CLIMenus.Basic.MenuBuilder("Demos")
-                .AddItem("Writer demos", new WriterDemos.Menu().Run)
+                .AddItem("Simplest demo (dependency injection)", DISimplestDemo.DemoRunner.Run)
+                .AddItem("Writer demos (dependency injection)", new DIWriterDemos.Menu().Run)
+                .AddItem("Writer demos (non DI)", new NonDIWriterDemos.Menu().Run)
                 .AddItem("Reader demos", ReaderDemos.Menu.Run)
                 .AddItem("Housekeeping demos", HousekeeperDemos.Menu.Run)
                 .Build()

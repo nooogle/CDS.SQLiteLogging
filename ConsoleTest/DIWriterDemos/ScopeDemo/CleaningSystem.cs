@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace ConsoleTest.WriterDemos.ScopeDemo;
+namespace ConsoleTest.DIWriterDemos.ScopeDemo;
 
 /// <summary>
 /// Represents a cleaning system for the factory.

@@ -2,7 +2,7 @@ using CDS.SQLiteLogging;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
-namespace ConsoleTest.WriterDemos;
+namespace ConsoleTest.DIWriterDemos;
 
 /// <summary>
 /// Provides soak testing capabilities for the SqliteLogger.

@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using CDS.SQLiteLogging;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using CDS.SQLiteLogging;
 
-namespace ConsoleTest.WriterDemos;
+namespace ConsoleTest.DIWriterDemos;
 
 /// <summary>
 /// Menu for running the demos.
@@ -31,6 +31,7 @@ class Menu
     {
         serviceProvider?.Dispose();
 
+        // Filename for the SQLite database
         string dbPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             nameof(CDS),
@@ -38,11 +39,13 @@ class Menu
             nameof(ConsoleTest),
             $"Log_V{MSSQLiteLogger.DBSchemaVersion}.db");
 
-        var sqliteLoggerProvider = CDS.SQLiteLogging.SQLiteLoggerProvider.Create(
+        // Create the SQLite logger provider
+        var sqliteLoggerProvider = CDS.SQLiteLogging.MSSQLiteLoggerProvider.Create(
             dbPath,
             batchingOptions,
             houseKeepingOptions);
 
+        // Get the logger utilities - we want to make these available to the demo classes
         var loggerUtilities = sqliteLoggerProvider.LoggerUtilities;
 
         // Setup dependency injection
@@ -51,21 +54,25 @@ class Menu
             {
                 builder.ClearProviders();
                 builder.AddProvider(sqliteLoggerProvider);
-                //builder.AddConsole();
-                //builder.AddDebug();
-                builder.SetMinimumLevel(LogLevel.Debug);
+                builder.SetMinimumLevel(LogLevel.Trace);
             })
-            .AddSingleton<ISQLiteWriterUtilities>(loggerUtilities)
+
+            // Add SQLiteWriterUtilities
+            .AddSingleton(loggerUtilities)
+
+            // Add demo classes
             .AddTransient<LogLevelsDemo>()
             .AddTransient<ScopeDemo.Factory>()
             .AddTransient<BurstLogEntriesTest>()
             .AddTransient<LoggerSoakTest>()
+
+            // Build the service provider
             .BuildServiceProvider();
     }
-    
+
     /// <summary>
-         /// Runs the main program logic.
-         /// </summary>
+    /// Runs the main program logic.
+    /// </summary>
     public void Run()
     {
         RecreateServiceProvider();
@@ -86,6 +93,12 @@ class Menu
             .Build()
             .Run();
 
+        // cleanup - we wait for the cache to empty before disposing the service provider,
+        // just in case there are any pending log entries
+        var loggerUtilities = serviceProvider.GetRequiredService<ISQLiteWriterUtilities>();
+        loggerUtilities.WaitUntilCacheIsEmpty(TimeSpan.FromSeconds(5));
+
+        // all done
         serviceProvider?.Dispose();
     }
 

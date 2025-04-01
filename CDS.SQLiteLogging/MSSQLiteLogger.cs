@@ -5,7 +5,7 @@ namespace CDS.SQLiteLogging;
 
 
 /// <summary>
-/// A logger implementation that logs messages to an SQLite database.
+/// A Microsoft Logging framework compatible logger that logs messages to an SQLite database.
 /// </summary>
 public class MSSQLiteLogger : ILogger, IDisposable
 {

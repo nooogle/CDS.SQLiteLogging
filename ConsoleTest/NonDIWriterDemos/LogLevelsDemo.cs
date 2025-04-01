@@ -1,27 +1,19 @@
 using Microsoft.Extensions.Logging;
 
-namespace ConsoleTest.WriterDemos;
+namespace ConsoleTest.NonDIWriterDemos;
 
 /// <summary>
 /// Contains ad-hoc tests for the SQLite Logger.
 /// </summary>
-class LogLevelsDemo
+/// <remarks>
+/// Initialises a new instance of the <see cref="LogLevelsDemo"/> class.
+/// </remarks>
+class LogLevelsDemo(CDS.SQLiteLogging.MSSQLiteLoggerProvider sqliteLoggerProvider)
 {
     /// <summary>
-    /// A logger, provided by the dependency injection container.
+    /// A logger
     /// </summary>
-    private readonly ILogger<LogLevelsDemo> logger;
-
-    /// <summary>
-    /// Initialises a new instance of the <see cref="LogLevelsDemo"/> class.
-    /// </summary>
-    /// <param name="logger">
-    /// A logger, provided by the dependency injection container.
-    /// </param>
-    public LogLevelsDemo(ILogger<LogLevelsDemo> logger)
-    {
-        this.logger = logger;
-    }
+    private readonly ILogger logger = sqliteLoggerProvider.CreateLogger(categoryName: $"{nameof(NonDIWriterDemos)}.{nameof(LogLevelsDemo)}");
 
     /// <summary>
     /// Runs a basic test of the SQLite Logger.

@@ -7,7 +7,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Provides an implementation of <see cref="ILoggerProvider"/> that creates instances of <see cref="MSSQLiteLogger"/>.
 /// </summary>
-public class SQLiteLoggerProvider : ILoggerProvider
+public class MSSQLiteLoggerProvider : ILoggerProvider
 {
     private readonly SQLiteWriter sharedLoggerWriter;
     private readonly LoggerExternalScopeProvider scopeProvider = new LoggerExternalScopeProvider();
@@ -21,12 +21,12 @@ public class SQLiteLoggerProvider : ILoggerProvider
 
 
     /// <summary>
-    /// Creates a new instance of the <see cref="SQLiteLoggerProvider"/> class.
+    /// Creates a new instance of the <see cref="MSSQLiteLoggerProvider"/> class.
     /// </summary>
     /// <param name="fileName">The name of the SQLite database file.</param>
     /// <param name="batchingOptions">Options for configuring batch processing.</param>
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
-    private SQLiteLoggerProvider(string fileName, BatchingOptions batchingOptions, HouseKeepingOptions houseKeepingOptions)
+    private MSSQLiteLoggerProvider(string fileName, BatchingOptions batchingOptions, HouseKeepingOptions houseKeepingOptions)
     {
         sharedLoggerWriter = new SQLiteWriter(
             fileName: fileName,
@@ -35,36 +35,36 @@ public class SQLiteLoggerProvider : ILoggerProvider
     }
 
     /// <summary>
-    /// Creates a new instance of <see cref="SQLiteLoggerProvider"/> with the specified file name.
+    /// Creates a new instance of <see cref="MSSQLiteLoggerProvider"/> with the specified file name.
     /// </summary>
     /// <param name="fileName">The name of the SQLite database file.</param>
-    /// <returns>A new instance of <see cref="SQLiteLoggerProvider"/>.</returns>
-    public static SQLiteLoggerProvider Create(string fileName)
+    /// <returns>A new instance of <see cref="MSSQLiteLoggerProvider"/>.</returns>
+    public static MSSQLiteLoggerProvider Create(string fileName)
     {
-        return new SQLiteLoggerProvider(fileName, new BatchingOptions(), new HouseKeepingOptions());
+        return new MSSQLiteLoggerProvider(fileName, new BatchingOptions(), new HouseKeepingOptions());
     }
 
     /// <summary>
-    /// Creates a new instance of <see cref="SQLiteLoggerProvider"/> with the specified file name and batching options.
+    /// Creates a new instance of <see cref="MSSQLiteLoggerProvider"/> with the specified file name and batching options.
     /// </summary>
     /// <param name="fileName">The name of the SQLite database file.</param>
     /// <param name="batchingOptions">Options for configuring batch processing.</param>
-    /// <returns>A new instance of <see cref="SQLiteLoggerProvider"/>.</returns>
-    public static SQLiteLoggerProvider Create(string fileName, BatchingOptions batchingOptions)
+    /// <returns>A new instance of <see cref="MSSQLiteLoggerProvider"/>.</returns>
+    public static MSSQLiteLoggerProvider Create(string fileName, BatchingOptions batchingOptions)
     {
-        return new SQLiteLoggerProvider(fileName, batchingOptions, new HouseKeepingOptions());
+        return new MSSQLiteLoggerProvider(fileName, batchingOptions, new HouseKeepingOptions());
     }
 
     /// <summary>
-    /// Creates a new instance of <see cref="SQLiteLoggerProvider"/> with the specified file name, batching options, and housekeeping options.
+    /// Creates a new instance of <see cref="MSSQLiteLoggerProvider"/> with the specified file name, batching options, and housekeeping options.
     /// </summary>
     /// <param name="fileName">The name of the SQLite database file.</param>
     /// <param name="batchingOptions">Options for configuring batch processing.</param>
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
-    /// <returns>A new instance of <see cref="SQLiteLoggerProvider"/>.</returns>
-    public static SQLiteLoggerProvider Create(string fileName, BatchingOptions batchingOptions, HouseKeepingOptions houseKeepingOptions)
+    /// <returns>A new instance of <see cref="MSSQLiteLoggerProvider"/>.</returns>
+    public static MSSQLiteLoggerProvider Create(string fileName, BatchingOptions batchingOptions, HouseKeepingOptions houseKeepingOptions)
     {
-        return new SQLiteLoggerProvider(fileName, batchingOptions, houseKeepingOptions);
+        return new MSSQLiteLoggerProvider(fileName, batchingOptions, houseKeepingOptions);
     }
 
     /// <summary>

@@ -1,3 +1,4 @@
+using CDS.SQLiteLogging.Internal;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -166,4 +167,25 @@ public class LogEntry
     /// </summary>
     /// <param name="json">The JSON string representing the message parameters.</param>
     public void DeserializeMsgParams(string json) => properties = JsonConvert.DeserializeObject<Dictionary<string, object>>(json, jsonSettings);
+
+
+    /// <summary>
+    /// Deserialises the scopes JSON.
+    /// </summary>
+    /// <returns>
+    /// A dictionary of scopes.
+    /// </returns>
+    public Dictionary<string, string> DeserialiseScopesJson()
+    {
+        Dictionary<string, string>? result = null;
+
+        if (!string.IsNullOrEmpty(ScopesJson))
+        {
+            result = JsonConvert.DeserializeObject<Dictionary<string, string>>(ScopesJson!);
+        }
+
+        result ??= [];
+
+        return result;
+    }
 }

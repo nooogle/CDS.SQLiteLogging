@@ -126,6 +126,10 @@ class BatchLogCache : IDisposable
     /// </summary>
     public void Dispose()
     {
+        System.Diagnostics.Debug.WriteLine("****************************************");
+        System.Diagnostics.Debug.WriteLine("BatchLogCache.Dispose() called");
+        System.Diagnostics.Debug.WriteLine("****************************************");
+
         if (!WaitUntilCacheIsEmpty(TimeSpan.FromSeconds(2000)))
         {
             System.Diagnostics.Debug.WriteLine("Warning: Not all log entries were written during shutdown");

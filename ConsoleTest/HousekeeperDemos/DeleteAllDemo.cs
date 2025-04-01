@@ -29,7 +29,7 @@ internal class DeleteAllDemo
 
         // create the housekeeper
         using CDS.SQLiteLogging.ConnectionManager connectionManager = new(filename);
-        using CDS.SQLiteLogging.Housekeeper housekeeper = new(connectionManager, options);
+        using CDS.SQLiteLogging.SQLiteHousekeeper housekeeper = new(connectionManager, options);
 
 
         // delete all log entries

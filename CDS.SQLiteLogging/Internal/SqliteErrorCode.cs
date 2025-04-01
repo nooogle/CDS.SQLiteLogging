@@ -1,4 +1,4 @@
-namespace CDS.SQLiteLogging;
+namespace CDS.SQLiteLogging.Internal;
 
 #if NET6_0_OR_GREATER
 

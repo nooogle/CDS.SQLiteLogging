@@ -5,7 +5,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Provides housekeeping for log entries, periodically deleting old records.
 /// </summary>
-public class Housekeeper : IDisposable
+public class SQLiteHousekeeper : IDisposable
 {
     private readonly ConnectionManager connectionManager;
     private Timer? cleanupTimer;
@@ -14,11 +14,11 @@ public class Housekeeper : IDisposable
     private int cleanupInProgress;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Housekeeper"/> class.
+    /// Initializes a new instance of the <see cref="SQLiteHousekeeper"/> class.
     /// </summary>
     /// <param name="connectionManager">The SQLite connection manager.</param>
     /// <param name="options">The housekeeping configuration options.</param>
-    public Housekeeper(
+    public SQLiteHousekeeper(
         ConnectionManager connectionManager,
         HouseKeepingOptions options)
     {
