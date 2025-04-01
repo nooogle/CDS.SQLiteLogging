@@ -86,7 +86,7 @@ public class MSSQLiteLoggerProvider : ILoggerProvider
     {
         var msSQLiteLogger = new MSSQLiteLogger(
             categoryName: categoryName,
-            sqliteWriter: sharedLoggerWriter,
+            externalSQLiteWriter: sharedLoggerWriter,
             scopeProvider: scopeProvider);
 
         return msSQLiteLogger;
@@ -97,11 +97,7 @@ public class MSSQLiteLoggerProvider : ILoggerProvider
     /// </summary>
     public void Dispose()
     {
-        foreach (var msLogger in loggers.Values)
-        {
-            msLogger.Dispose();
-        }
-
         loggers.Clear();
+        sharedLoggerWriter?.Dispose();
     }
 }

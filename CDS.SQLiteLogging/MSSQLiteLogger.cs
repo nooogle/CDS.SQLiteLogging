@@ -7,7 +7,7 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// A Microsoft Logging framework compatible logger that logs messages to an SQLite database.
 /// </summary>
-public class MSSQLiteLogger : ILogger, IDisposable
+public class MSSQLiteLogger : ILogger
 {
     /// <summary>
     /// Version that will increment every time the database scheme is modified.
@@ -17,36 +17,29 @@ public class MSSQLiteLogger : ILogger, IDisposable
 
 
     private readonly string categoryName;
-    private readonly SQLiteWriter sqliteWriter;
+    private readonly SQLiteWriter externalSQLiteWriter;
     private readonly IExternalScopeProvider scopeProvider;
 
     /// <inheritdoc/>
-    public int PendingEntriesCount => sqliteWriter.PendingEntriesCount;
+    public int PendingEntriesCount => externalSQLiteWriter.PendingEntriesCount;
 
     /// <inheritdoc/>
-    public int DiscardedEntriesCount => sqliteWriter.DiscardedEntriesCount;
+    public int DiscardedEntriesCount => externalSQLiteWriter.DiscardedEntriesCount;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MSSQLiteLogger"/> class.
     /// </summary>
     /// <param name="categoryName">The category name for the logger.</param>
-    /// <param name="sqliteWriter">The SQLite logger instance.</param>
+    /// <param name="externalSQLiteWriter">The SQLite logger instance. We don't own this instance and mustn't dispose it!</param>
     /// <param name="scopeProvider">The scope provider for managing logging scopes.</param>
     /// <exception cref="ArgumentNullException">Thrown if any required parameter is null.</exception>
-    internal MSSQLiteLogger(string categoryName, SQLiteWriter sqliteWriter, IExternalScopeProvider scopeProvider)
+    internal MSSQLiteLogger(string categoryName, SQLiteWriter externalSQLiteWriter, IExternalScopeProvider scopeProvider)
     {
         this.categoryName = categoryName ?? throw new ArgumentNullException(nameof(categoryName));
-        this.sqliteWriter = sqliteWriter ?? throw new ArgumentNullException(nameof(sqliteWriter));
+        this.externalSQLiteWriter = externalSQLiteWriter ?? throw new ArgumentNullException(nameof(externalSQLiteWriter));
         this.scopeProvider = scopeProvider ?? throw new ArgumentNullException(nameof(scopeProvider));
     }
 
-    /// <summary>
-    /// Disposes the logger and flushes any pending log entries.
-    /// </summary>
-    public void Dispose()
-    {
-        sqliteWriter.Dispose();
-    }
 
     /// <summary>
     /// Begins a logical operation scope.
@@ -105,7 +98,7 @@ public class MSSQLiteLogger : ILogger, IDisposable
             ex: exception,
             scopesJson: scopesJson);
 
-        sqliteWriter.Add(logEntry);
+        externalSQLiteWriter.Add(logEntry);
     }
 
     /// <summary>
@@ -199,12 +192,12 @@ public class MSSQLiteLogger : ILogger, IDisposable
     /// <inheritdoc/>
     public int DeleteAll()
     {
-        return sqliteWriter.DeleteAll();
+        return externalSQLiteWriter.DeleteAll();
     }
 
     /// <inheritdoc/>
     public long GetDatabaseFileSize()
     {
-        return sqliteWriter.GetDatabaseFileSize();
+        return externalSQLiteWriter.GetDatabaseFileSize();
     }
 }

@@ -17,7 +17,7 @@ public static class TestDatabaseHelper
             nameof(CDS),
             nameof(SQLiteLogging),
             nameof(Tests),
-            $"Log_V{LogEntry.Version}.db");
+            $"Log_V{MSSQLiteLogger.DBSchemaVersion}.db");
 
         var dbFolder = Path.GetDirectoryName(dbPath);
         Directory.CreateDirectory(dbFolder);
