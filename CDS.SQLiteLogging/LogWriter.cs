@@ -83,6 +83,28 @@ public class LogWriter
     }
 
     /// <summary>
+    /// Adds multiple log entries to the database in a single transaction synchronously.
+    /// </summary>
+    /// <param name="entries">The log entries to add.</param>
+    public void AddBatch(IEnumerable<LogEntry> entries)
+    {
+        if (entries == null) throw new ArgumentNullException(nameof(entries));
+
+        connectionManager.ExecuteInTransaction(transaction =>
+        {
+            using var cmd = new SqliteCommand(sqlInsert, connectionManager.Connection, transaction);
+            foreach (var entry in entries)
+            {
+                if (entry == null) throw new ArgumentNullException(nameof(entries), "One of the entries is null.");
+                cmd.Parameters.Clear();
+                AddParametersToCommand(cmd, entry);
+                cmd.ExecuteNonQuery();
+            }
+        });
+    }
+
+
+    /// <summary>
     /// Adds parameters to the SQLite command based on the log entry properties.
     /// </summary>
     /// <param name="cmd">The SQLite command.</param>

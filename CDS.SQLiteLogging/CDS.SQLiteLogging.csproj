@@ -8,6 +8,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageIcon>log-file.png</PackageIcon>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <Title>SQLite logging</Title>
     <Description>Library for logging using an SQlite backend</Description>
     <Authors>Jon Shadforth</Authors>
@@ -16,6 +17,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
     <None Include="log-file.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>

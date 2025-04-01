@@ -156,11 +156,9 @@ class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
     /// Deletes all log entries from the database asynchronously.
     /// </summary>
     /// <returns>A task representing the asynchronous operation, with the number of entries deleted.</returns>
-    public async Task<int> DeleteAllAsync()
+    public Task<int> DeleteAllAsync()
     {
-        // Flush any pending entries first
-        await FlushAsync().ConfigureAwait(false);
-        return await housekeeper.DeleteAllAsync().ConfigureAwait(false);
+        return Task.Run(DeleteAll);
     }
 
     /// <summary>
@@ -220,5 +218,19 @@ class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
 
     /// <inheritdoc/>
     public void ResetDiscardedEntriesCount() => logCache.ResetDiscardCount();
+
+
+    /// <inheritdoc/>
+    public void WaitUntilCacheIsEmpty(TimeSpan timeout)
+    {
+        logCache.WaitUntilCacheIsEmpty(timeout);
+    }
+
+
+    /// <inheritdoc/>
+    public async Task WaitUntilCacheIsEmptyAsync(TimeSpan timeout)
+    {
+        await logCache.WaitUntilCacheIsEmptyAsync(timeout).ConfigureAwait(false);
+    }
 }
 

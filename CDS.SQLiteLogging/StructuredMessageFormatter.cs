@@ -38,7 +38,7 @@ class StructuredMessageFormatter
         var paramDict = parameters.ToDictionary(kv => kv.Key, kv => kv.Value);
 
         // Retrieve the parsed template from the cache if available.
-        List<TemplateSegment> segments;
+        List<TemplateSegment>? segments;
         if (!TemplateCache.TryGetValue(template, out segments))
         {
             segments = ParseTemplate(template);
@@ -96,7 +96,7 @@ class StructuredMessageFormatter
 
                     // Split by colon to separate the key and the optional format specifier.
                     string key;
-                    string format = null;
+                    string? format = null;
                     int colonIndex = placeholderContent.IndexOf(':');
                     if (colonIndex >= 0)
                     {
@@ -172,9 +172,9 @@ class StructuredMessageFormatter
     private class PlaceholderSegment : TemplateSegment
     {
         private readonly string _key;
-        private readonly string _format;
+        private readonly string? _format;
         private readonly string _missingSubstitution;
-        public PlaceholderSegment(string key, string format, string missingSubstitution)
+        public PlaceholderSegment(string key, string? format, string missingSubstitution)
         {
             _key = key;
             _format = format;
@@ -183,7 +183,7 @@ class StructuredMessageFormatter
         public override void Append(StringBuilder sb, IDictionary<string, object> parameters)
         {
             // Look up the parameter by key.
-            if (!parameters.TryGetValue(_key, out object value))
+            if (!parameters.TryGetValue(_key, out object? value))
             {
                 sb.Append(_missingSubstitution);
                 return;

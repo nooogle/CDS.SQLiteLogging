@@ -135,6 +135,58 @@ public class ConnectionManager : IDisposable
         }
     }
 
+
+    /// <summary>
+    /// Executes an action within a transaction with retry logic for concurrency issues.
+    /// </summary>
+    /// <param name="action">The action to execute within a transaction.</param>
+    /// <param name="isolationLevel">The transaction isolation level.</param>
+    /// <returns>True if the operation completed successfully, false otherwise.</returns>
+    public bool ExecuteInTransaction(
+        Action<SqliteTransaction> action,
+        IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
+    {
+        semaphore.Wait();
+        try
+        {
+            int retries = 0;
+            while (retries < 3)
+            {
+                using (var transaction = connection.BeginTransaction(isolationLevel))
+                {
+                    try
+                    {
+                        action(transaction);
+                        transaction.Commit();
+                        return true;
+                    }
+
+#if NET6_0_OR_GREATER
+                    catch (SqliteException ex) when ((SqliteErrorCode)ex.SqliteErrorCode == SqliteErrorCode.Busy ||
+                                                     (SqliteErrorCode)ex.SqliteErrorCode == SqliteErrorCode.Locked)
+#else
+                catch (SqliteException ex) when (ex.ResultCode == SqliteErrorCode.Busy ||
+                                                 ex.ResultCode == SqliteErrorCode.Locked)
+#endif
+                    {
+                        transaction.Rollback();
+                        retries++;
+                        if (retries >= 3)
+                            throw;
+
+                        Thread.Sleep(100 * retries);
+                    }
+                }
+            }
+            return false;
+        }
+        finally
+        {
+            semaphore.Release();
+        }
+    }
+
+
     /// <summary>
     /// Executes an action with retry logic for concurrency issues.
     /// </summary>

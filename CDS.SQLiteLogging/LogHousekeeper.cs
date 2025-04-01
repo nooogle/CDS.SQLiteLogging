@@ -10,6 +10,7 @@ class LogHousekeeper : IDisposable
     private readonly Timer cleanupTimer;
     private bool disposed;
     private TimeSpan retentionPeriod;
+    private int cleanupInProgress;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LogHousekeeper"/> class.
@@ -49,16 +50,27 @@ class LogHousekeeper : IDisposable
     /// Callback method that performs the cleanup operation.
     /// </summary>
     /// <param name="state">State object (not used).</param>
-    private async void CleanupCallback(object state)
+    private void CleanupCallback(object? state)
     {
+        // If a cleanup is already in progress, skip this invocation
+        if (Interlocked.CompareExchange(ref cleanupInProgress, 1, 0) != 0)
+        {
+            System.Diagnostics.Debug.WriteLine("Skipping log cleanup because previous operation is still in progress");
+            return;
+        }
+
         try
         {
-            await DeleteEntriesOlderThanAsync(DateTime.UtcNow - retentionPeriod)
-                .ConfigureAwait(false);
+            DeleteEntriesOlderThan(DateTimeOffset.Now - retentionPeriod);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Error during log cleanup: {ex.Message}");
+        }
+        finally
+        {
+            // Reset the flag indicating cleanup is done
+            Interlocked.Exchange(ref cleanupInProgress, 0);
         }
     }
 
@@ -67,30 +79,41 @@ class LogHousekeeper : IDisposable
     /// </summary>
     /// <param name="cutoffDate">The cutoff date for deletion.</param>
     /// <returns>The number of entries deleted.</returns>
-    public async Task<int> DeleteEntriesOlderThanAsync(DateTime cutoffDate)
+    public int DeleteEntriesOlderThan(DateTimeOffset cutoffDate)
     {
         int deletedCount = 0;
 
-        await connectionManager.ExecuteInTransactionAsync(async transaction =>
+        connectionManager.ExecuteInTransaction(transaction =>
         {
             string formattedDate = cutoffDate.ToString("o"); // ISO 8601 format
             string sql = $"DELETE FROM {tableName} WHERE Timestamp < @cutoffDate";
 
             using var cmd = new SqliteCommand(sql, connectionManager.Connection, transaction);
             cmd.Parameters.AddWithValue("@cutoffDate", formattedDate);
-            deletedCount = await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
-
-        }).ConfigureAwait(false);
+            deletedCount = cmd.ExecuteNonQuery();
+        });
 
         return deletedCount;
     }
 
     /// <summary>
-    /// Deletes entries older than the specified date (synchronous version).
+    /// Deletes all entries from the database.
     /// </summary>
-    /// <param name="cutoffDate">The cutoff date for deletion.</param>
     /// <returns>The number of entries deleted.</returns>
-    public int DeleteEntriesOlderThan(DateTime cutoffDate) => DeleteEntriesOlderThanAsync(cutoffDate).GetAwaiter().GetResult();
+    public int DeleteAll()
+    {
+        int deletedCount = 0;
+
+        connectionManager.ExecuteInTransaction(transaction =>
+        {
+            string sql = $"DELETE FROM {tableName}";
+
+            using var cmd = new SqliteCommand(sql, connectionManager.Connection, transaction);
+            deletedCount = cmd.ExecuteNonQuery();
+        });
+
+        return deletedCount;
+    }
 
     /// <summary>
     /// Disposes resources used by the housekeeper.
@@ -117,29 +140,4 @@ class LogHousekeeper : IDisposable
             disposed = true;
         }
     }
-
-    /// <summary>
-    /// Deletes all entries from the database.
-    /// </summary>
-    /// <returns>The number of entries deleted.</returns>
-    public async Task<int> DeleteAllAsync()
-    {
-        int deletedCount = 0;
-
-        await connectionManager.ExecuteInTransactionAsync(async transaction =>
-        {
-            string sql = $"DELETE FROM {tableName}";
-
-            using var cmd = new SqliteCommand(sql, connectionManager.Connection, transaction);
-            deletedCount = await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
-        }).ConfigureAwait(false);
-
-        return deletedCount;
-    }
-
-    /// <summary>
-    /// Deletes all entries from the database (synchronous version).
-    /// </summary>
-    /// <returns>The number of entries deleted.</returns>
-    public int DeleteAll() => DeleteAllAsync().GetAwaiter().GetResult();
 }
