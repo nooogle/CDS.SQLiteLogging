@@ -89,76 +89,6 @@ class BatchLogCache : IDisposable
         }
     }
 
-    /// <summary>
-    /// Process all pending entries in the queue.
-    /// </summary>
-    private async Task ProcessPendingEntries()
-    {
-        if (pendingEntries == 0 || disposed)
-        {
-            return;
-        }
-
-        await flushLock.WaitAsync().ConfigureAwait(false);
-        try
-        {
-            // Keep processing until all entries are handled or we're disposed
-            while (pendingEntries > 0 && !disposed)
-            {
-                await FlushBatchAsync().ConfigureAwait(false);
-            }
-        }
-        finally
-        {
-            flushLock.Release();
-        }
-    }
-
-    /// <summary>
-    /// Flush a batch of entries to the database.
-    /// </summary>
-    private async Task FlushBatchAsync()
-    {
-        // Check if there's anything to flush or if we're disposed
-        if (pendingEntries == 0 || disposed)
-        {
-            return;
-        }
-
-        // Take a snapshot of entries to process
-        var entries = new List<LogEntry>(Math.Min(batchSize, pendingEntries));
-        int processed = 0;
-
-        // Dequeue entries up to batch size
-        while (processed < batchSize && entryQueue.TryDequeue(out var entry))
-        {
-            entries.Add(entry);
-            processed++;
-        }
-
-        if (entries.Count > 0)
-        {
-            try
-            {
-                // Write entries to database in a transaction
-                await logWriter.AddBatchAsync(entries).ConfigureAwait(false);
-
-                // Update the counter
-                Interlocked.Add(ref pendingEntries, -processed);
-            }
-            catch (Exception)
-            {
-                // If writing fails, put the entries back in the queue
-                foreach (var entry in entries)
-                {
-                    entryQueue.Enqueue(entry);
-                }
-
-                // Don't re-adjust the counter since we put the entries back
-                throw;
-            }
-        }
-    }
 
     /// <summary>
     /// Adds a log entry to the cache for batch processing.
@@ -190,107 +120,6 @@ class BatchLogCache : IDisposable
         }
     }
 
-    /// <summary>
-    /// Flushes the cache to the database asynchronously.
-    /// </summary>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task FlushAsync()
-    {
-        if (disposed)
-        {
-            throw new ObjectDisposedException(nameof(BatchLogCache));
-        }
-
-        // Signal the processing thread and wait for it to complete
-        processEvent.Set();
-
-        await flushLock.WaitAsync().ConfigureAwait(false);
-        try
-        {
-            await FlushBatchAsync().ConfigureAwait(false);
-        }
-        finally
-        {
-            flushLock.Release();
-        }
-    }
-
-    /// <summary>
-    /// Flushes all remaining entries and waits for completion.
-    /// </summary>
-    public async Task FlushAllAsync()
-    {
-        if (disposed)
-        {
-            throw new ObjectDisposedException(nameof(BatchLogCache));
-        }
-
-        if (pendingEntries == 0)
-        {
-            return;
-        }
-
-        // Signal the processing thread
-        processEvent.Set();
-
-        await flushLock.WaitAsync().ConfigureAwait(false);
-        try
-        {
-            // Keep flushing until the queue is empty
-            while (pendingEntries > 0 && !disposed)
-            {
-                await FlushBatchAsync().ConfigureAwait(false);
-            }
-        }
-        finally
-        {
-            flushLock.Release();
-        }
-    }
-
-    /// <summary>
-    /// Flushes all remaining entries synchronously. 
-    /// </summary>
-    public void FlushAll()
-    {
-        if (disposed)
-        {
-            return;
-        }
-
-        // Signal the processing thread
-        processEvent.Set();
-
-        // No entries to process
-        if (pendingEntries == 0)
-        {
-            return;
-        }
-
-        if (!flushLock.Wait(TimeSpan.FromSeconds(10)))
-        {
-            System.Diagnostics.Debug.WriteLine("Warning: Timed out waiting for flush lock during FlushAll");
-            return;
-        }
-
-        try
-        {
-            // Keep flushing until the queue is empty or we time out
-            var timeout = DateTime.UtcNow.AddSeconds(30);
-            while (pendingEntries > 0 && !disposed && DateTime.UtcNow < timeout)
-            {
-                FlushBatchAsync().GetAwaiter().GetResult();
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Error during synchronous flush: {ex.Message}");
-        }
-        finally
-        {
-            flushLock.Release();
-        }
-    }
 
     /// <summary>
     /// Disposes resources used by the batch log cache.
@@ -330,16 +159,6 @@ class BatchLogCache : IDisposable
             if (!processingThread.Join(TimeSpan.FromSeconds(5)))
             {
                 System.Diagnostics.Debug.WriteLine("Warning: Log processing thread did not exit gracefully");
-            }
-
-            // Flush any remaining entries with timeout protection
-            try
-            {
-                FlushAll();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error during final log flush: {ex.Message}");
             }
 
             // Clean up resources
@@ -390,7 +209,7 @@ class BatchLogCache : IDisposable
     /// </summary>
     private void WriteBatch()
     {
-        // Check if there's anything to flush or if we're disposed
+        // Check if there's anything to write or if we're disposed
         if (pendingEntries == 0 || disposed)
         {
             return;

@@ -72,23 +72,11 @@ class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
     }
 
     /// <summary>
-    /// Flushes all pending entries from the cache to the database.
-    /// </summary>
-    public Task FlushAsync() => logCache.FlushAllAsync();
-
-    /// <summary>
-    /// Flushes all pending entries from the cache to the database synchronously.
-    /// </summary>
-    public void Flush() => logCache.FlushAll();
-
-    /// <summary>
     /// Reads and returns all log entries from the database.
     /// </summary>
     /// <returns>An immutable list of log entries.</returns>
     public ImmutableList<LogEntry> GetAllEntries()
     {
-        // Flush pending entries first to ensure we get the most recent data
-        Flush();
         return reader.GetAllEntries();
     }
 
@@ -98,8 +86,6 @@ class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
     /// <returns>An immutable list of log entries.</returns>
     public async Task<ImmutableList<LogEntry>> GetAllEntriesAsync()
     {
-        // Flush pending entries first to ensure we get the most recent data
-        await FlushAsync().ConfigureAwait(false);
         return await reader.GetAllEntriesAsync().ConfigureAwait(false);
     }
 
@@ -125,7 +111,7 @@ class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
                 try
                 {
                     // Try to flush any remaining entries
-                    logCache.FlushAll();
+                    logCache.WaitUntilCacheIsEmpty(timeout: TimeSpan.FromSeconds(2));
                 }
                 catch (Exception ex)
                 {
@@ -147,8 +133,6 @@ class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
     /// <returns>The number of entries deleted.</returns>
     public int DeleteAll()
     {
-        // Flush any pending entries first
-        Flush();
         return housekeeper.DeleteAll();
     }
 
@@ -168,8 +152,6 @@ class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
     /// <returns>An immutable list of log entries, ordered by timestamp descending.</returns>
     public ImmutableList<LogEntry> GetRecentEntries(int maxCount)
     {
-        // Flush any pending entries first to ensure we get the most recent data
-        Flush();
         return reader.GetRecentEntries(maxCount);
     }
 
@@ -180,7 +162,6 @@ class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
     /// <returns>A task representing the asynchronous operation, with an immutable list of log entries.</returns>
     public async Task<ImmutableList<LogEntry>> GetRecentEntriesAsync(int maxCount)
     {
-        await FlushAsync().ConfigureAwait(false);
         return await reader.GetRecentEntriesAsync(maxCount).ConfigureAwait(false);
     }
 
@@ -198,7 +179,6 @@ class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
     /// <returns>A task representing the asynchronous operation, with an immutable list of log entries.</returns>
     public async Task<ImmutableList<LogEntry>> GetEntriesByMessageParamAsync(string key, object value)
     {
-        await FlushAsync().ConfigureAwait(false);
         return await reader.GetEntriesByMessageParamAsync(key, value).ConfigureAwait(false);
     }
 
@@ -230,7 +210,7 @@ class SQLiteLogger : IDisposable, ISQLiteLoggerUtilities
     /// <inheritdoc/>
     public async Task WaitUntilCacheIsEmptyAsync(TimeSpan timeout)
     {
-        await logCache.WaitUntilCacheIsEmptyAsync(timeout).ConfigureAwait(false);
+        await Task.Run(() => logCache.WaitUntilCacheIsEmpty(timeout)).ConfigureAwait(false);
     }
 }
 

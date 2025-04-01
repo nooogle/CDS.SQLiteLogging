@@ -45,7 +45,6 @@ public class MSSQLiteLogger : ILogger, IDisposable
     /// </summary>
     public void Dispose()
     {
-        logger.Flush();
         logger.Dispose();
     }
 
@@ -195,12 +194,6 @@ public class MSSQLiteLogger : ILogger, IDisposable
         return flattened.Count == 0
             ? null
             : JsonConvert.SerializeObject(flattened);
-    }
-
-    /// <inheritdoc/>
-    public void Flush()
-    {
-        logger.Flush();
     }
 
     /// <inheritdoc/>

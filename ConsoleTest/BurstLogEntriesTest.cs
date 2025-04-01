@@ -83,7 +83,7 @@ class BurstLogEntriesTest(ILogger<BurstLogEntriesTest> logger, ISQLiteLoggerUtil
 
         // Measure flush duration
         var flushStopwatch = Stopwatch.StartNew();
-        loggerUtilities.Flush();
+        loggerUtilities.WaitUntilCacheIsEmpty(timeout: TimeSpan.FromSeconds(10));
         flushStopwatch.Stop();
 
         // Report flush duration

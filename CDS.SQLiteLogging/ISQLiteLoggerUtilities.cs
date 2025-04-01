@@ -29,21 +29,6 @@ public interface ISQLiteLoggerUtilities
 
 
     /// <summary>
-    /// Flushes any pending log entries to the database.
-    /// </summary>
-    void Flush();
-
-
-    /// <summary>
-    /// Flushes any pending log entries to the database asynchronously.
-    /// </summary>
-    /// <returns>
-    /// A task that represents the asynchronous operation.
-    /// </returns>
-    Task FlushAsync();
-
-
-    /// <summary>
     /// Deletes all log entries from the database.
     /// </summary>
     /// <returns>

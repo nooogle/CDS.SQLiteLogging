@@ -109,7 +109,7 @@ class LoggerSoakTest
             // Ensure pending entries are flushed
             try
             {
-                await loggerUtilities.FlushAsync();
+                await loggerUtilities.WaitUntilCacheIsEmptyAsync(timeout: TimeSpan.FromSeconds(10));
             }
             catch (Exception ex)
             {
