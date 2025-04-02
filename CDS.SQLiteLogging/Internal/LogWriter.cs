@@ -1,6 +1,3 @@
-using System.Reflection;
-using System.Text;
-
 namespace CDS.SQLiteLogging.Internal;
 
 /// <summary>
@@ -9,7 +6,6 @@ namespace CDS.SQLiteLogging.Internal;
 public class LogWriter
 {
     private readonly ConnectionManager connectionManager;
-    private readonly string tableName;
     private readonly string sqlInsert;
 
     /// <summary>
@@ -20,7 +16,6 @@ public class LogWriter
     public LogWriter(ConnectionManager connectionManager, string tableName)
     {
         this.connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
-        this.tableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
 
         // Predefined SQL INSERT command
         sqlInsert = $@"

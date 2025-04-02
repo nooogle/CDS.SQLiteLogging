@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 namespace CDS.SQLiteLogging;
 
 
+
 /// <summary>
 /// Provides an implementation of <see cref="ILoggerProvider"/> that creates instances of <see cref="MSSQLiteLogger"/>.
 /// </summary>
@@ -13,6 +14,15 @@ public class MSSQLiteLoggerProvider : ILoggerProvider
     private readonly LoggerExternalScopeProvider scopeProvider = new LoggerExternalScopeProvider();
     private readonly ConcurrentDictionary<string, MSSQLiteLogger> loggers = new();
     private readonly IDateTimeProvider dateTimeProvider;
+
+    /// <summary>
+    /// Event that is raised when a log entry is received.
+    /// </summary>
+    public event LogEntryReceivedEvent? LogEntryReceived
+    {
+        add => sharedLoggerWriter.LogEntryReceived += value;
+        remove => sharedLoggerWriter.LogEntryReceived -= value;
+    }
 
 
     /// <summary>

@@ -13,7 +13,13 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
     private readonly SQLiteHousekeeper housekeeper;
     private readonly BatchLogCache logCache;
     private bool disposed;
-    private readonly IDateTimeProvider dateTimeProvider;
+
+
+    /// <summary>
+    /// Event that is raised when a log entry is received.
+    /// </summary>
+    public event LogEntryReceivedEvent? LogEntryReceived;
+
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SQLiteWriter"/> class.
@@ -27,9 +33,6 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
         HouseKeepingOptions houseKeepingOptions,
         IDateTimeProvider dateTimeProvider)
     {
-        // Store the date time provider
-        this.dateTimeProvider = dateTimeProvider;
-
         // Initialize connection manager
         connectionManager = new ConnectionManager(fileName);
 
@@ -75,6 +78,7 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
         }
 
         logCache.Add(entry);
+        LogEntryReceived?.Invoke(entry);
     }
 
     /// <summary>
