@@ -1,18 +1,19 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.IO;
-using FluentAssertions;
 
-namespace CDS.SQLiteLogging.Tests;
+namespace CDS.SQLiteLogging.Tests.Support;
 
 delegate void OnDatabaseCreatedDelegate(IServiceProvider serviceProvider, string dbPath);
 delegate void OnDatabaseClosedDelegate(string dbPath);
 
-static class NewDatabaseTestHost
+class NewDatabaseTestHost
 {
-    public static void Run(
+    public BatchingOptions BatchingOptions { get; set; } = new BatchingOptions();
+    public HouseKeepingOptions HouseKeepingOptions { get; set; } = new HouseKeepingOptions();
+    public IDateTimeProvider DateTimeProvider { get; set; } = new DefaultDateTimeProvider();
+
+
+    public void Run(
         OnDatabaseCreatedDelegate onDatabaseCreated,
         OnDatabaseClosedDelegate onDatabaseClosed)
     {
@@ -31,7 +32,11 @@ static class NewDatabaseTestHost
         }
 
         // Create the SQLite logger provider
-        var sqliteLoggerProvider = MSSQLiteLoggerProvider.Create(dbPath);
+        var sqliteLoggerProvider = MSSQLiteLoggerProvider.Create(
+            fileName: dbPath,
+            batchingOptions: BatchingOptions,
+            houseKeepingOptions: HouseKeepingOptions,
+            dateTimeProvider: DateTimeProvider);
 
         // Get the logger utilities - we want to make these available to the demo classes
         var loggerUtilities = sqliteLoggerProvider.LoggerUtilities;

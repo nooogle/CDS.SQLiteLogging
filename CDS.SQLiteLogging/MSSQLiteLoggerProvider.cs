@@ -12,6 +12,7 @@ public class MSSQLiteLoggerProvider : ILoggerProvider
     private readonly SQLiteWriter sharedLoggerWriter;
     private readonly LoggerExternalScopeProvider scopeProvider = new LoggerExternalScopeProvider();
     private readonly ConcurrentDictionary<string, MSSQLiteLogger> loggers = new();
+    private readonly IDateTimeProvider dateTimeProvider;
 
 
     /// <summary>
@@ -26,12 +27,19 @@ public class MSSQLiteLoggerProvider : ILoggerProvider
     /// <param name="fileName">The name of the SQLite database file.</param>
     /// <param name="batchingOptions">Options for configuring batch processing.</param>
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
-    private MSSQLiteLoggerProvider(string fileName, BatchingOptions batchingOptions, HouseKeepingOptions houseKeepingOptions)
+    private MSSQLiteLoggerProvider(
+        string fileName, 
+        BatchingOptions batchingOptions, 
+        HouseKeepingOptions houseKeepingOptions,
+        IDateTimeProvider dateTimeProvider)
     {
+        this.dateTimeProvider = dateTimeProvider;
+
         sharedLoggerWriter = new SQLiteWriter(
             fileName: fileName,
             batchingOptions,
-            houseKeepingOptions);
+            houseKeepingOptions,
+            dateTimeProvider);
     }
 
     /// <summary>
@@ -41,7 +49,7 @@ public class MSSQLiteLoggerProvider : ILoggerProvider
     /// <returns>A new instance of <see cref="MSSQLiteLoggerProvider"/>.</returns>
     public static MSSQLiteLoggerProvider Create(string fileName)
     {
-        return new MSSQLiteLoggerProvider(fileName, new BatchingOptions(), new HouseKeepingOptions());
+        return Create(fileName, new BatchingOptions(), new HouseKeepingOptions());
     }
 
     /// <summary>
@@ -52,7 +60,7 @@ public class MSSQLiteLoggerProvider : ILoggerProvider
     /// <returns>A new instance of <see cref="MSSQLiteLoggerProvider"/>.</returns>
     public static MSSQLiteLoggerProvider Create(string fileName, BatchingOptions batchingOptions)
     {
-        return new MSSQLiteLoggerProvider(fileName, batchingOptions, new HouseKeepingOptions());
+        return Create(fileName, batchingOptions, new HouseKeepingOptions());
     }
 
     /// <summary>
@@ -64,8 +72,34 @@ public class MSSQLiteLoggerProvider : ILoggerProvider
     /// <returns>A new instance of <see cref="MSSQLiteLoggerProvider"/>.</returns>
     public static MSSQLiteLoggerProvider Create(string fileName, BatchingOptions batchingOptions, HouseKeepingOptions houseKeepingOptions)
     {
-        return new MSSQLiteLoggerProvider(fileName, batchingOptions, houseKeepingOptions);
+        return Create(
+            fileName, 
+            batchingOptions, 
+            houseKeepingOptions,
+            new DefaultDateTimeProvider());
     }
+
+
+    /// <summary>
+    /// Creates a new instance of <see cref="MSSQLiteLoggerProvider"/> with the specified file name, batching options, and housekeeping options.
+    /// </summary>
+    /// <param name="fileName">The name of the SQLite database file.</param>
+    /// <param name="batchingOptions">Options for configuring batch processing.</param>
+    /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
+    /// <returns>A new instance of <see cref="MSSQLiteLoggerProvider"/>.</returns>
+    public static MSSQLiteLoggerProvider Create(
+        string fileName, 
+        BatchingOptions batchingOptions, 
+        HouseKeepingOptions houseKeepingOptions,
+        IDateTimeProvider dateTimeProvider)
+    {
+        return new MSSQLiteLoggerProvider(
+            fileName, 
+            batchingOptions, 
+            houseKeepingOptions,
+            dateTimeProvider);
+    }
+
 
     /// <summary>
     /// Creates a new <see cref="ILogger"/> instance for the specified category name.
@@ -87,7 +121,8 @@ public class MSSQLiteLoggerProvider : ILoggerProvider
         var msSQLiteLogger = new MSSQLiteLogger(
             categoryName: categoryName,
             externalSQLiteWriter: sharedLoggerWriter,
-            scopeProvider: scopeProvider);
+            scopeProvider: scopeProvider,
+            dateTimeProvider: dateTimeProvider);
 
         return msSQLiteLogger;
     }

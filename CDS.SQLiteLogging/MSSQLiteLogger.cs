@@ -19,6 +19,7 @@ public class MSSQLiteLogger : ILogger
     private readonly string categoryName;
     private readonly SQLiteWriter externalSQLiteWriter;
     private readonly IExternalScopeProvider scopeProvider;
+    private IDateTimeProvider dateTimeProvider;
 
     /// <inheritdoc/>
     public int PendingEntriesCount => externalSQLiteWriter.PendingEntriesCount;
@@ -33,11 +34,12 @@ public class MSSQLiteLogger : ILogger
     /// <param name="externalSQLiteWriter">The SQLite logger instance. We don't own this instance and mustn't dispose it!</param>
     /// <param name="scopeProvider">The scope provider for managing logging scopes.</param>
     /// <exception cref="ArgumentNullException">Thrown if any required parameter is null.</exception>
-    internal MSSQLiteLogger(string categoryName, SQLiteWriter externalSQLiteWriter, IExternalScopeProvider scopeProvider)
+    internal MSSQLiteLogger(string categoryName, SQLiteWriter externalSQLiteWriter, IExternalScopeProvider scopeProvider, IDateTimeProvider dateTimeProvider)
     {
         this.categoryName = categoryName ?? throw new ArgumentNullException(nameof(categoryName));
         this.externalSQLiteWriter = externalSQLiteWriter ?? throw new ArgumentNullException(nameof(externalSQLiteWriter));
         this.scopeProvider = scopeProvider ?? throw new ArgumentNullException(nameof(scopeProvider));
+        this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
     }
 
 
@@ -88,7 +90,7 @@ public class MSSQLiteLogger : ILogger
         var formattedMessage = formatter(state, exception);
 
         var logEntry = new LogEntry(
-            timeStamp: DateTimeOffset.Now,
+            timeStamp: dateTimeProvider.Now,
             category: categoryName,
             level: logLevel,
             eventId: eventId.Id,

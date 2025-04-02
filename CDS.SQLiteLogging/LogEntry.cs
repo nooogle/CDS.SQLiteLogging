@@ -129,7 +129,6 @@ public class LogEntry
         Level = level;
         EventId = eventId;
         EventName = eventName;
-        Timestamp = DateTimeOffset.Now;
         MessageTemplate = messageTemplate;
         Properties = properties;
         ExceptionJson = ExceptionSerializer.ToJson(ex);

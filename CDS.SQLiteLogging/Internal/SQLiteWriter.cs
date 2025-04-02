@@ -13,6 +13,7 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
     private readonly SQLiteHousekeeper housekeeper;
     private readonly BatchLogCache logCache;
     private bool disposed;
+    private readonly IDateTimeProvider dateTimeProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SQLiteWriter"/> class.
@@ -23,8 +24,12 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
     public SQLiteWriter(
         string fileName,
         BatchingOptions batchingOptions,
-        HouseKeepingOptions houseKeepingOptions)
+        HouseKeepingOptions houseKeepingOptions,
+        IDateTimeProvider dateTimeProvider)
     {
+        // Store the date time provider
+        this.dateTimeProvider = dateTimeProvider;
+
         // Initialize connection manager
         connectionManager = new ConnectionManager(fileName);
 
@@ -41,9 +46,11 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
 
         // Initialize housekeeper with defaults if not specified
         houseKeepingOptions ??= new HouseKeepingOptions();
+
         housekeeper = new SQLiteHousekeeper(
             connectionManager,
-            houseKeepingOptions);
+            houseKeepingOptions,
+            dateTimeProvider);
     }
 
     /// <summary>

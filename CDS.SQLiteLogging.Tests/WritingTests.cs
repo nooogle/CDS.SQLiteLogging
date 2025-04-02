@@ -1,3 +1,4 @@
+using CDS.SQLiteLogging.Tests.Support;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -22,7 +23,7 @@ public class WritingTests
     public void Test_WritingAndReadingEntries_ResultsInCorrectCount(int numberOfEntries)
     {
         // Arrange & Act
-        NewDatabaseTestHost.Run(
+        new NewDatabaseTestHost().Run(
             onDatabaseCreated: (serviceProvider, dbPath) =>
             {
                 var logger = serviceProvider.GetRequiredService<ILogger<WritingTests>>();
@@ -49,7 +50,7 @@ public class WritingTests
         const string message = "This is a simple log message.";
 
         // Arrange & Act
-        NewDatabaseTestHost.Run(
+        new NewDatabaseTestHost().Run(
             onDatabaseCreated: (serviceProvider, dbPath) =>
             {
                 var logger = serviceProvider.GetRequiredService<ILogger<WritingTests>>();
@@ -77,7 +78,7 @@ public class WritingTests
         var loginTime = DateTime.Now;
 
         // Arrange & Act
-        NewDatabaseTestHost.Run(
+        new NewDatabaseTestHost().Run(
             onDatabaseCreated: (serviceProvider, dbPath) =>
             {
                 var logger = serviceProvider.GetRequiredService<ILogger<WritingTests>>();
@@ -111,7 +112,7 @@ public class WritingTests
         };
 
         // Arrange & Act
-        NewDatabaseTestHost.Run(
+        new NewDatabaseTestHost().Run(
             onDatabaseCreated: (serviceProvider, dbPath) =>
             {
                 var logger = serviceProvider.GetRequiredService<ILogger<WritingTests>>();
@@ -148,7 +149,7 @@ public class WritingTests
         const string message = "An error occurred.";
 
         // Arrange & Act
-        NewDatabaseTestHost.Run(
+        new NewDatabaseTestHost().Run(
             onDatabaseCreated: (serviceProvider, dbPath) =>
             {
                 var logger = serviceProvider.GetRequiredService<ILogger<WritingTests>>();
@@ -216,7 +217,7 @@ public class WritingTests
         const string message = "Logging within nested scopes.";
 
         // Arrange & Act
-        NewDatabaseTestHost.Run(
+        new NewDatabaseTestHost().Run(
             onDatabaseCreated: (serviceProvider, dbPath) =>
             {
                 var logger = serviceProvider.GetRequiredService<ILogger<WritingTests>>();
@@ -257,7 +258,7 @@ public class WritingTests
         };
 
         // Arrange & Act
-        NewDatabaseTestHost.Run(
+        new NewDatabaseTestHost().Run(
             onDatabaseCreated: (serviceProvider, dbPath) =>
             {
                 var logger = serviceProvider.GetRequiredService<ILogger<WritingTests>>();
@@ -292,7 +293,7 @@ public class WritingTests
         const string username = "customuser";
 
         // Arrange & Act
-        NewDatabaseTestHost.Run(
+        new NewDatabaseTestHost().Run(
             onDatabaseCreated: (serviceProvider, dbPath) =>
             {
                 var logger = serviceProvider.GetRequiredService<ILogger<WritingTests>>();

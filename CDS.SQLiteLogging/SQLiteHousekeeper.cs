@@ -12,6 +12,7 @@ public class SQLiteHousekeeper : IDisposable
     private bool disposed;
     private readonly HouseKeepingOptions options;
     private int cleanupInProgress;
+    private IDateTimeProvider dateTimeProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SQLiteHousekeeper"/> class.
@@ -20,8 +21,10 @@ public class SQLiteHousekeeper : IDisposable
     /// <param name="options">The housekeeping configuration options.</param>
     public SQLiteHousekeeper(
         ConnectionManager connectionManager,
-        HouseKeepingOptions options)
+        HouseKeepingOptions options,
+        IDateTimeProvider dateTimeProvider)
     {
+        this.dateTimeProvider = dateTimeProvider;
         this.connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
         this.options = options ?? throw new ArgumentNullException(nameof(options));
 
@@ -59,7 +62,7 @@ public class SQLiteHousekeeper : IDisposable
     {
         try
         {
-            return DeleteEntriesOlderThan(DateTimeOffset.Now - options.RetentionPeriod);
+            return DeleteOldEntries();
         }
         catch (Exception ex)
         {
@@ -83,7 +86,7 @@ public class SQLiteHousekeeper : IDisposable
 
         try
         {
-            DeleteEntriesOlderThan(DateTimeOffset.Now - options.RetentionPeriod);
+            DeleteOldEntries();
         }
         catch (Exception ex)
         {
@@ -101,8 +104,9 @@ public class SQLiteHousekeeper : IDisposable
     /// </summary>
     /// <param name="cutoffDate">The cutoff date for deletion.</param>
     /// <returns>The number of entries deleted.</returns>
-    public int DeleteEntriesOlderThan(DateTimeOffset cutoffDate)
+    public int DeleteOldEntries()
     {
+        var cutoffDate = dateTimeProvider.Now - options.RetentionPeriod;
         int deletedCount = 0;
 
         connectionManager.ExecuteInTransaction(transaction =>

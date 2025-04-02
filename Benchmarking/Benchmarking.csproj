@@ -6,12 +6,21 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
+
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <PackageReference Include="System.Reflection.Metadata" Version="9.0.3" />
+    <PackageReference Include="System.Collections.Immutable" Version="9.0.3" />
+  </ItemGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\CDS.SQLiteLogging\CDS.SQLiteLogging.csproj" />
   </ItemGroup>
