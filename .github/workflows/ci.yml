@@ -2,11 +2,8 @@ name: Build, Test & Pack
 
 on:
   push:
-    branches: [ master ]
     tags:
       - 'v*' # Trigger on version tags like v1.0, v2.3.4
-  pull_request:
-    branches: [ master ]
 
 jobs:
   build_test_pack: # Renamed job for clarity
