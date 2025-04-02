@@ -3,13 +3,14 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>net8.0;net48</TargetFrameworks>
-    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
+    <!-- ImplicitUsings only enabled for .NET 8 -->
+    <ImplicitUsings Condition="'$(TargetFramework)' == 'net8.0'">enable</ImplicitUsings>
+    <ImplicitUsings Condition="'$(TargetFramework)' == 'net48'">disable</ImplicitUsings>
 
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,5 +25,4 @@
   <ItemGroup>
     <ProjectReference Include="..\CDS.SQLiteLogging\CDS.SQLiteLogging.csproj" />
   </ItemGroup>
-
 </Project>
