@@ -10,7 +10,6 @@ public class HouseKeepingOptions
     /// </summary>
     public HousekeepingMode Mode { get; set; } = HousekeepingMode.Automatic;
 
-
     /// <summary>
     /// Gets or sets the retention period for log entries.
     /// </summary>

@@ -54,7 +54,7 @@ public class SQLiteHousekeeper : IDisposable
     public HousekeepingMode Mode => options.Mode;
 
     /// <summary>
-    /// Executes a housekeeping cycle that removes old entries.
+    /// Executes a housekeeping cycle that removes old entries to limit the database size.
     /// Can be called manually regardless of the housekeeping mode.
     /// </summary>
     /// <returns>The number of entries deleted.</returns>
@@ -100,26 +100,35 @@ public class SQLiteHousekeeper : IDisposable
     }
 
     /// <summary>
-    /// Deletes entries older than the specified date.
+    /// Deletes entries older than the specified date or until the database size is within the limit.
     /// </summary>
-    /// <param name="cutoffDate">The cutoff date for deletion.</param>
     /// <returns>The number of entries deleted.</returns>
     public int DeleteOldEntries()
     {
         var cutoffDate = dateTimeProvider.Now - options.RetentionPeriod;
-        int deletedCount = 0;
+        int totalDeletedCount = 0;
 
         connectionManager.ExecuteInTransaction(transaction =>
         {
+            // First, always delete records older than cutoff date
             string formattedDate = cutoffDate.ToString("o"); // ISO 8601 format
             string sql = $"DELETE FROM {TableCreator.TableName} WHERE Timestamp < @cutoffDate";
 
-            using var cmd = new SqliteCommand(sql, connectionManager.Connection, transaction);
-            cmd.Parameters.AddWithValue("@cutoffDate", formattedDate);
-            deletedCount = cmd.ExecuteNonQuery();
+            using (var cmd = new SqliteCommand(sql, connectionManager.Connection, transaction))
+            {
+                cmd.Parameters.AddWithValue("@cutoffDate", formattedDate);
+                totalDeletedCount += cmd.ExecuteNonQuery();
+            }
         });
 
-        return deletedCount;
+        // If we deleted any records, vacuum the database to reclaim space
+        if (totalDeletedCount > 0)
+        {
+            using var vacuumCmd = new SqliteCommand("VACUUM", connectionManager.Connection);
+            vacuumCmd.ExecuteNonQuery();
+        }
+
+        return totalDeletedCount;
     }
 
     /// <summary>

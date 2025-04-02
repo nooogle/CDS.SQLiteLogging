@@ -87,7 +87,7 @@ static class CustomOptionsEditor
         houseKeepingOptions = new()
         {
             RetentionPeriod = TimeSpan.FromDays(retentionDays),
-            CleanupInterval = TimeSpan.FromHours(cleanupIntervalHours)
+            CleanupInterval = TimeSpan.FromHours(cleanupIntervalHours),
         };
 
         return houseKeepingOptions;
