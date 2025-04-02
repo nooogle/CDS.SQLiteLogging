@@ -21,6 +21,16 @@ public partial class FormMain : Form
                 form.ShowDialog(this);
             });
 
+        group.AddDemo(
+            name: "Domain-specific live view",
+            tooltip: "A viewer showing a domain-specific log entry. The extracts and displays domain-specific knowledge of scopes and structured messages",
+            parent: this,
+            action: () =>
+            {
+                using var form = new DomainSpecificLiveLogViewer.FormDemo();
+                form.ShowDialog(this);
+            });
+
         menuTree.ExpandAllGroups();
     }
 }

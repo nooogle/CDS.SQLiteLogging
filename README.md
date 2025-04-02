@@ -9,14 +9,13 @@ the Microsoft.Extensions.Logging framework.
 ## TODO
 
 This is a first draft of the readme. It needs to be updated with:
-* Example not using dependency injection.
-* Housekeeping example
-* More discussion of the features and how to use them and how this thing works!
-* Log reader
-* UI log viewer support
-* DB browser tool and SQLite links
-* Any rational for why we are doing this and what the benefits are!
-* Unit tests and the little tick box thing that shows everything is passing!
+* Existing features still to document:
+  * UI live log viewer support
+  * DB browser tool and SQLite links
+  * Any rational for why we are doing this and what the benefits are!
+  * Unit tests and the little tick box thing that shows everything is passing!
+* Features to add/demo
+  * Standalone log reader demo for offline log review
 
 
 ## Features

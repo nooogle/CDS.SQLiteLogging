@@ -19,4 +19,13 @@
     <ProjectReference Include="..\CDS.SQLiteLogging\CDS.SQLiteLogging.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="DomainSpecificLiveLogViewer\FormDemo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="DomainSpecificLiveLogViewer\LiveLogViewList.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+  </ItemGroup>
+
 </Project>
