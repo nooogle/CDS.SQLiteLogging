@@ -9,6 +9,9 @@ namespace CDS.SQLiteLogging;
 /// </summary>
 public class LogEntry
 {
+    private static int nextLiveId = 1; // Static variable to keep track of the next LiveId
+
+
     /// <summary>
     /// Returns a string that represents the current object.
     /// </summary>
@@ -37,6 +40,16 @@ public class LogEntry
     /// Gets or sets the unique identifier for the log entry.
     /// </summary>
     public int DbId { get; set; }
+
+    /// <summary>
+    /// Returns the Live Identifier - this is assigned each time a log entry object
+    /// is created. It is used to identify the log entry in a live environent only,
+    /// since log entries sent to the database only have the DbId assigned
+    /// via a batch insert thread. When reading back log entries from the database,
+    /// use the DbId property. When displaying log entires in a live environment,
+    /// use the LiveId property.
+    /// </summary>
+    public int LiveId { get; set; } 
 
     /// <summary>
     /// Gets or sets the category of the log entry.
@@ -124,6 +137,9 @@ public class LogEntry
         Exception? ex,
         string? scopesJson)
     {
+        // Assign a unique LiveId for this log entry
+        LiveId = nextLiveId++;
+
         Timestamp = timeStamp;
         Category = category;
         Level = level;

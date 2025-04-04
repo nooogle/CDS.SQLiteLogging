@@ -46,9 +46,9 @@ public partial class SimpleLogViewList : UserControl
         {
             var localTime = entry.Timestamp.ToLocalTime();
 
-            var listViewItem = new ListViewItem(entry.Level.Humanize());
-            
+            var listViewItem = new ListViewItem(entry.LiveId.ToString());
             listViewItem.Tag = entry;
+            listViewItem.SubItems.Add(entry.Level.Humanize());
             listViewItem.SubItems.Add(localTime.ToString("G"));
             listViewItem.SubItems.Add(entry.RenderedMessage);
 

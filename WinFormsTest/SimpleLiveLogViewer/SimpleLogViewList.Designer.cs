@@ -34,6 +34,7 @@
             columnHeaderType = new ColumnHeader();
             columnHeaderTime = new ColumnHeader();
             columnHeaderMsg = new ColumnHeader();
+            columnHeaderLiveID = new ColumnHeader();
             SuspendLayout();
             // 
             // timerGrabPendingLogEntries
@@ -44,7 +45,7 @@
             // 
             // listViewLogEntries
             // 
-            listViewLogEntries.Columns.AddRange(new ColumnHeader[] { columnHeaderType, columnHeaderTime, columnHeaderMsg });
+            listViewLogEntries.Columns.AddRange(new ColumnHeader[] { columnHeaderLiveID, columnHeaderType, columnHeaderTime, columnHeaderMsg });
             listViewLogEntries.Dock = DockStyle.Fill;
             listViewLogEntries.FullRowSelect = true;
             listViewLogEntries.GridLines = true;
@@ -72,6 +73,10 @@
             columnHeaderMsg.Text = "Message";
             columnHeaderMsg.Width = 400;
             // 
+            // columnHeaderLiveID
+            // 
+            columnHeaderLiveID.Text = "LiveId";
+            // 
             // SimpleLogViewList
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -89,5 +94,6 @@
         private ColumnHeader columnHeaderTime;
         private ColumnHeader columnHeaderMsg;
         private ColumnHeader columnHeaderType;
+        private ColumnHeader columnHeaderLiveID;
     }
 }
