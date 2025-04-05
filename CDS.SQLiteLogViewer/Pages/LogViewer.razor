@@ -1,0 +1,94 @@
+﻿@page "/logviewer"
+@using CDS.SQLiteLogViewer.Models
+@using System.Text.Json
+
+@inject IJSRuntime JS
+
+<h3>Log Viewer</h3>
+
+<InputFile OnChange="OnFileSelected" />
+
+@if (entries != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Timestamp</th>
+                <th>Category</th>
+                <th>Level</th>
+                <th>Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var entry in entries)
+            {
+                <tr>
+                    <td>@entry.DbId</td>
+                    <td>@entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>@entry.Category</td>
+                    <td>@entry.Level.ToString()</td>
+                    <td>@entry.RenderedMessage</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<LogEntry>? entries;
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        using var stream = file.OpenReadStream(maxAllowedSize: 10_000_000);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        var byteArray = ms.ToArray();
+
+        var result = await JS.InvokeAsync<List<Dictionary<string, JsonElement>>>(
+            "loadSqlJsDb",
+            byteArray
+        );
+
+        entries = result.Select(MapToLogEntry).ToList();
+
+        if(entries.Count > 0)
+        {
+        }
+    }
+
+    private LogEntry MapToLogEntry(Dictionary<string, JsonElement> row)
+    {
+        return new LogEntry
+            {
+                DbId = row["DbId"].GetInt32(),
+                Category = row["Category"].GetString(),
+                EventId = row["EventId"].GetInt32(),
+                EventName = row["EventName"].GetString(),
+                Timestamp = DateTimeOffset.Parse(row["Timestamp"].GetString() ?? ""),
+                Level = Enum.TryParse<LogLevel>(row["Level"].GetInt32().ToString(), out var level) ? level : LogLevel.Information,
+                MessageTemplate = row["MessageTemplate"].GetString() ?? "",
+                RenderedMessage = row["RenderedMessage"].GetString() ?? "",
+                ExceptionJson = row["ExceptionJson"].GetString(),
+                ScopesJson = row["ScopesJson"].GetString(),
+                Properties = ParseProperties(row["Properties"].GetString())
+            };
+    }
+
+    private IReadOnlyDictionary<string, object> ParseProperties(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return new Dictionary<string, object>();
+
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, object>>(json)
+                   ?? new Dictionary<string, object>();
+        }
+        catch
+        {
+            return new Dictionary<string, object> { { "Error", "Failed to parse properties" } };
+        }
+    }
+}
