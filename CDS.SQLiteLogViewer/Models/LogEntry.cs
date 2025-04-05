@@ -2,7 +2,7 @@
 
 public class LogEntry
 {
-    public int DbId { get; set; }
+    public long DbId { get; set; }
     public LogLevel Level { get; set; }
     public string? Category { get; set; }
     public int EventId { get; set; }

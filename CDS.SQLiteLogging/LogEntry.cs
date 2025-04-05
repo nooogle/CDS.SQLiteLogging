@@ -39,7 +39,7 @@ public class LogEntry
     /// <summary>
     /// Gets or sets the unique identifier for the log entry.
     /// </summary>
-    public int DbId { get; set; }
+    public long DbId { get; set; }
 
     /// <summary>
     /// Returns the Live Identifier - this is assigned each time a log entry object

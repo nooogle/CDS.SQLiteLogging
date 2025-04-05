@@ -1,79 +1,151 @@
 ﻿@page "/logviewer"
 @using CDS.SQLiteLogViewer.Models
 @using System.Text.Json
+@using MudBlazor
+@using Microsoft.AspNetCore.Components.Forms
 
 @inject IJSRuntime JS
 
-<h3>Log Viewer</h3>
+<MudContainer>
+    <MudText Typo="Typo.h3" Class="mb-4">Log Viewer</MudText>
 
-<InputFile OnChange="OnFileSelected" />
+    <MudPaper Class="pa-4 mb-4">
+        <InputFile OnChange="OnFileSelected" class="d-none" id="fileInput" accept=".db,.sqlite,.sqlite3" />
+        <MudButton HtmlTag="label"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.CloudUpload"
+                   for="fileInput">
+            Upload SQLite Log Database
+        </MudButton>
+    </MudPaper>
 
-@if (entries != null)
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Timestamp</th>
-                <th>Category</th>
-                <th>Level</th>
-                <th>Message</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var entry in entries)
-            {
-                <tr>
-                    <td>@entry.DbId</td>
-                    <td>@entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                    <td>@entry.Category</td>
-                    <td>@entry.Level.ToString()</td>
-                    <td>@entry.RenderedMessage</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+    <MudTextField @bind-Value="searchTerm"
+                  Placeholder="Search..."
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search"
+                  Class="mb-4" />
+
+    @if (entries != null)
+    {
+        <MudTable T="LogEntry" Items="FilteredEntries"
+                  Hover="true"
+                  Bordered="true"
+                  Striped="true"
+                  Loading="@isLoading"
+                  LoadingProgressColor="Color.Primary"
+                  SortLabel="Sort By">
+            <HeaderContent>
+                <MudTh><MudTableSortLabel T="LogEntry" SortBy="x => x.DbId">Id</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel T="LogEntry" SortBy="x => x.Timestamp">Timestamp</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel T="LogEntry" SortBy="x => x.Category">Category</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel T="LogEntry" SortBy="x => x.Level">Level</MudTableSortLabel></MudTh>
+                <MudTh>Message</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@context.DbId</MudTd>
+                <MudTd DataLabel="Timestamp">@context.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</MudTd>
+                <MudTd DataLabel="Category">@context.Category</MudTd>
+                <MudTd DataLabel="Level">
+                    <MudChip T="string" Color="@GetLevelColor(context.Level)" Size="Size.Small">
+                        @context.Level.ToString()
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Message">@context.RenderedMessage</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudContainer>
 
 @code {
     private List<LogEntry>? entries;
+    private string? searchTerm;
+    private bool isLoading = false;
+
+    private IEnumerable<LogEntry> FilteredEntries => entries?.Where(entry =>
+        string.IsNullOrWhiteSpace(searchTerm) ||
+        entry.RenderedMessage?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true ||
+        entry.Category?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true ||
+        entry.EventName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true
+    ) ?? Array.Empty<LogEntry>();
 
     private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
-        var file = e.File;
-        using var stream = file.OpenReadStream(maxAllowedSize: 10_000_000);
-        using var ms = new MemoryStream();
-        await stream.CopyToAsync(ms);
-        var byteArray = ms.ToArray();
-
-        var result = await JS.InvokeAsync<List<Dictionary<string, JsonElement>>>(
-            "loadSqlJsDb",
-            byteArray
-        );
-
-        entries = result.Select(MapToLogEntry).ToList();
-
-        if(entries.Count > 0)
+        isLoading = true;
+        try
         {
+            var file = e.File;
+            using var stream = file.OpenReadStream(maxAllowedSize: 10_000_000);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var byteArray = ms.ToArray();
+
+            var result = await JS.InvokeAsync<List<Dictionary<string, JsonElement>>>(
+                "loadSqlJsDb",
+                byteArray
+            );
+
+            entries = result.Select(MapToLogEntry).ToList();
+        }
+        catch (Exception ex)
+        {
+            // Consider adding MudBlazor snackbar notification for errors
+            Console.WriteLine($"Error loading database: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 
+    private Color GetLevelColor(LogLevel level) => level switch
+    {
+        LogLevel.Trace => Color.Default,
+        LogLevel.Debug => Color.Info,
+        LogLevel.Information => Color.Success,
+        LogLevel.Warning => Color.Warning,
+        LogLevel.Error => Color.Error,
+        LogLevel.Critical => Color.Error,
+        _ => Color.Default
+    };
+
     private LogEntry MapToLogEntry(Dictionary<string, JsonElement> row)
     {
-        return new LogEntry
-            {
-                DbId = row["DbId"].GetInt32(),
-                Category = row["Category"].GetString(),
-                EventId = row["EventId"].GetInt32(),
-                EventName = row["EventName"].GetString(),
-                Timestamp = DateTimeOffset.Parse(row["Timestamp"].GetString() ?? ""),
-                Level = Enum.TryParse<LogLevel>(row["Level"].GetInt32().ToString(), out var level) ? level : LogLevel.Information,
-                MessageTemplate = row["MessageTemplate"].GetString() ?? "",
-                RenderedMessage = row["RenderedMessage"].GetString() ?? "",
-                ExceptionJson = row["ExceptionJson"].GetString(),
-                ScopesJson = row["ScopesJson"].GetString(),
-                Properties = ParseProperties(row["Properties"].GetString())
-            };
+        try
+        {
+            return new LogEntry
+                {
+                    DbId = row.TryGetValue("DbId", out var dbId) ? dbId.GetInt64() : 0,
+                    Category = row.TryGetValue("Category", out var category) ? category.ValueKind != JsonValueKind.Null ? category.GetString() : null : null,
+                    EventId = row.TryGetValue("EventId", out var eventId) ? eventId.GetInt32() : 0,
+                    EventName = row.TryGetValue("EventName", out var eventName) ? eventName.ValueKind != JsonValueKind.Null ? eventName.GetString() : null : null,
+                    Timestamp = row.TryGetValue("Timestamp", out var timestamp) && timestamp.ValueKind != JsonValueKind.Null ?
+                        DateTimeOffset.Parse(timestamp.GetString() ?? DateTimeOffset.Now.ToString()) : DateTimeOffset.Now,
+                    Level = row.TryGetValue("Level", out var level) ?
+                        Enum.TryParse<LogLevel>(level.GetInt32().ToString(), out var lvl) ? lvl : LogLevel.Information : LogLevel.Information,
+                    MessageTemplate = row.TryGetValue("MessageTemplate", out var msgTemplate) ?
+                        msgTemplate.ValueKind != JsonValueKind.Null ? msgTemplate.GetString() ?? "" : "" : "",
+                    RenderedMessage = row.TryGetValue("RenderedMessage", out var rendMsg) ?
+                        rendMsg.ValueKind != JsonValueKind.Null ? rendMsg.GetString() ?? "" : "" : "",
+                    ExceptionJson = row.TryGetValue("ExceptionJson", out var exJson) ?
+                        exJson.ValueKind != JsonValueKind.Null ? exJson.GetString() : null : null,
+                    ScopesJson = row.TryGetValue("ScopesJson", out var scopesJson) ?
+                        scopesJson.ValueKind != JsonValueKind.Null ? scopesJson.GetString() : null : null,
+                    Properties = row.TryGetValue("Properties", out var props) && props.ValueKind != JsonValueKind.Null ?
+                        ParseProperties(props.GetString()) : new Dictionary<string, object>()
+                };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error mapping log entry: {ex.Message}");
+            return new LogEntry
+                {
+                    DbId = 0,
+                    RenderedMessage = $"Error parsing log entry: {ex.Message}",
+                    Level = LogLevel.Error,
+                    Timestamp = DateTimeOffset.Now
+                };
+        }
     }
 
     private IReadOnlyDictionary<string, object> ParseProperties(string? json)

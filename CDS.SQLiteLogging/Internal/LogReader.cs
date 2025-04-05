@@ -150,7 +150,7 @@ class LogReader
     {
         var entry = new LogEntry
         {
-            DbId = reader.GetInt32(reader.GetOrdinal(nameof(LogEntry.DbId))),
+            DbId = reader.GetInt64(reader.GetOrdinal(nameof(LogEntry.DbId))),
             Category = reader.GetString(reader.GetOrdinal(nameof(LogEntry.Category))),
             EventId = reader.GetInt32(reader.GetOrdinal(nameof(LogEntry.EventId))),
             EventName = reader.GetString(reader.GetOrdinal(nameof(LogEntry.EventName))),
