@@ -1,4 +1,4 @@
-﻿using CDS.SQLiteLogging;
+﻿using CDS.SQLiteLogging.MEL;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -15,10 +15,10 @@ class DemoRunner
     public static void Run()
     {
         // Get the path for the SQLite database file
-        string dbPath = GetDatabasePath();
+        string dbPath = DBPathCreator.Create();
 
         // Create the SQLite logger provider
-        var sqliteLoggerProvider = MSSQLiteLoggerProvider.Create(dbPath);
+        var sqliteLoggerProvider = MELLoggerProvider.Create(dbPath);
 
         // Setup dependency injection
         using var serviceProvider = new ServiceCollection()
@@ -37,19 +37,5 @@ class DemoRunner
         // Ensure all pending log entries are written before disposing the service provider
         var loggerUtilities = sqliteLoggerProvider.LoggerUtilities;
         loggerUtilities.WaitUntilCacheIsEmpty(TimeSpan.FromSeconds(5));
-    }
-
-    /// <summary>
-    /// Gets the path for the SQLite database file.
-    /// </summary>
-    /// <returns>The full path to the SQLite database file.</returns>
-    private static string GetDatabasePath()
-    {
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            nameof(CDS),
-            nameof(CDS.SQLiteLogging),
-            nameof(ConsoleTest),
-            $"Log_V{MSSQLiteLogger.DBSchemaVersion}.db");
     }
 }

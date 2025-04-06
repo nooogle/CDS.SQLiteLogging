@@ -1,4 +1,4 @@
-﻿namespace CDS.SQLiteLogViewer.Models;
+﻿namespace CDS.SQLiteBlazorLogViewer.Models;
 
 public class LogEntry
 {

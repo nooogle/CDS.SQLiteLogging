@@ -6,20 +6,19 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Provides read-only access to SQLite log entries
 /// </summary>
-public class SQLiteReader : IDisposable
+public class Reader : IDisposable
 {
     private readonly ConnectionManager connectionManager;
     private readonly LogReader reader;
     private bool disposed;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="SQLiteReader"/> class.
+    /// Initializes a new instance of the <see cref="Reader"/> class.
     /// </summary>
     /// <param name="fileName">The name of the SQLite database file.</param>
-    public SQLiteReader(string fileName)
+    public Reader(ConnectionManager connectionManager)
     {
-        // Initialize connection manager
-        connectionManager = new ConnectionManager(fileName);
+        this.connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
 
         // Initialize reader with the existing log table
         reader = new LogReader(connectionManager, TableCreator.TableName);

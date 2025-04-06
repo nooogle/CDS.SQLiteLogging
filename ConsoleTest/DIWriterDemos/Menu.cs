@@ -1,4 +1,5 @@
 ﻿using CDS.SQLiteLogging;
+using CDS.SQLiteLogging.MEL;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -31,17 +32,9 @@ class Menu
     {
         serviceProvider?.Dispose();
 
-        // Filename for the SQLite database
-        string dbPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            nameof(CDS),
-            nameof(CDS.SQLiteLogging),
-            nameof(ConsoleTest),
-            $"Log_V{MSSQLiteLogger.DBSchemaVersion}.db");
-
         // Create the SQLite logger provider
-        var sqliteLoggerProvider = CDS.SQLiteLogging.MSSQLiteLoggerProvider.Create(
-            dbPath,
+        var sqliteLoggerProvider = MELLoggerProvider.Create(
+            DBPathCreator.Create(),
             batchingOptions,
             houseKeepingOptions);
 

@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <OutputType>Exe</OutputType>
+    <Platforms>AnyCPU;x64;ARM64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

@@ -11,16 +11,6 @@ internal class DeleteAllDemo
     /// </summary>
     public void Run()
     {
-        // get filename of the database
-        Console.WriteLine("Enter the filename of the database:");
-        string filename = Console.ReadLine()?.Trim('\"') ?? string.Empty;
-        if(!File.Exists(filename))
-        {
-            Console.WriteLine("File not found.");
-            return;
-        }
-
-
         // create the housekeeping options
         CDS.SQLiteLogging.HouseKeepingOptions options = new()
         {
@@ -28,9 +18,8 @@ internal class DeleteAllDemo
         };
 
         // create the housekeeper
-        using CDS.SQLiteLogging.ConnectionManager connectionManager = new(filename);
-        using CDS.SQLiteLogging.SQLiteHousekeeper housekeeper = new(connectionManager, options, dateTimeProvider: new CDS.SQLiteLogging.DefaultDateTimeProvider());
-
+        using var connectionManager = new CDS.SQLiteLogging.ConnectionManager(DBPathCreator.Create());
+        using var housekeeper = new CDS.SQLiteLogging.Housekeeper(connectionManager, options, new CDS.SQLiteLogging.DefaultDateTimeProvider());
 
         // delete all log entries
         int numberOfRecordsDeleted = housekeeper.DeleteAll();

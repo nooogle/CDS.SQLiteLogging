@@ -1,5 +1,6 @@
 
 using CDS.SQLiteLogging;
+using CDS.SQLiteLogging.MEL;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -62,7 +63,7 @@ namespace WinFormsTest.DomainSpecificLiveLogViewer
             nameof(CDS),
             nameof(CDS.SQLiteLogging),
             nameof(WinFormsTest),
-            $"Log_V{MSSQLiteLogger.DBSchemaVersion}.db");
+            $"Log_V{MELLogger.DBSchemaVersion}.db");
 
         /// <summary>
         /// Handles the load event of the form.
@@ -81,7 +82,7 @@ namespace WinFormsTest.DomainSpecificLiveLogViewer
         private void CreateLogger()
         {
             // Create the SQLite logger provider
-            var sqliteLoggerProvider = CDS.SQLiteLogging.MSSQLiteLoggerProvider.Create(CreateDBPath());
+            var sqliteLoggerProvider = MELLoggerProvider.Create(CreateDBPath());
 
             // Get the logger utilities - we want to make these available to the demo classes
             loggerUtilities = sqliteLoggerProvider.LoggerUtilities;

@@ -1,13 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace CDS.SQLiteLogging;
+namespace CDS.SQLiteLogging.MEL;
 
 
 /// <summary>
 /// A Microsoft Logging framework compatible logger that logs messages to an SQLite database.
 /// </summary>
-public class MSSQLiteLogger : ILogger
+public class MELLogger : ILogger
 {
     /// <summary>
     /// Version that will increment every time the database scheme is modified.
@@ -17,7 +17,7 @@ public class MSSQLiteLogger : ILogger
 
 
     private readonly string categoryName;
-    private readonly SQLiteWriter externalSQLiteWriter;
+    private readonly Logger externalSQLiteWriter;
     private readonly IExternalScopeProvider scopeProvider;
     private IDateTimeProvider dateTimeProvider;
 
@@ -28,13 +28,13 @@ public class MSSQLiteLogger : ILogger
     public int DiscardedEntriesCount => externalSQLiteWriter.DiscardedEntriesCount;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="MSSQLiteLogger"/> class.
+    /// Initializes a new instance of the <see cref="MELLogger"/> class.
     /// </summary>
     /// <param name="categoryName">The category name for the logger.</param>
     /// <param name="externalSQLiteWriter">The SQLite logger instance. We don't own this instance and mustn't dispose it!</param>
     /// <param name="scopeProvider">The scope provider for managing logging scopes.</param>
     /// <exception cref="ArgumentNullException">Thrown if any required parameter is null.</exception>
-    internal MSSQLiteLogger(string categoryName, SQLiteWriter externalSQLiteWriter, IExternalScopeProvider scopeProvider, IDateTimeProvider dateTimeProvider)
+    internal MELLogger(string categoryName, Logger externalSQLiteWriter, IExternalScopeProvider scopeProvider, IDateTimeProvider dateTimeProvider)
     {
         this.categoryName = categoryName ?? throw new ArgumentNullException(nameof(categoryName));
         this.externalSQLiteWriter = externalSQLiteWriter ?? throw new ArgumentNullException(nameof(externalSQLiteWriter));

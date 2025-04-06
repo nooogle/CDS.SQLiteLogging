@@ -1,4 +1,5 @@
-# CDS.SQLiteLogging
+# CDS.SQLiteLogging - DON'T USE THIS - USE SERILOG OR SIMILAR INSTEAD!
+
 
 ![CI](https://github.com/nooogle/CDS.SQLiteLogging/actions/workflows/ci.yml/badge.svg)
 

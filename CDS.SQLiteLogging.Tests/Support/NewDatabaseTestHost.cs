@@ -23,7 +23,7 @@ class NewDatabaseTestHost
             nameof(CDS),
             nameof(SQLiteLogging),
             nameof(Tests),
-            $"TestLog_V{MSSQLiteLogger.DBSchemaVersion}.db");
+            $"TestLog_V{MEL.MELLogger.DBSchemaVersion}.db");
 
         // Delete the database if it exists
         if (File.Exists(dbPath))
@@ -32,7 +32,7 @@ class NewDatabaseTestHost
         }
 
         // Create the SQLite logger provider
-        var sqliteLoggerProvider = MSSQLiteLoggerProvider.Create(
+        var sqliteLoggerProvider = MEL.MELLoggerProvider.Create(
             fileName: dbPath,
             batchingOptions: BatchingOptions,
             houseKeepingOptions: HouseKeepingOptions,

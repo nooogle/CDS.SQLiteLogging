@@ -1,18 +1,17 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
-namespace CDS.SQLiteLogging;
-
+namespace CDS.SQLiteLogging.MEL;
 
 
 /// <summary>
-/// Provides an implementation of <see cref="ILoggerProvider"/> that creates instances of <see cref="MSSQLiteLogger"/>.
+/// Provides an implementation of <see cref="ILoggerProvider"/> that creates instances of <see cref="MELLogger"/>.
 /// </summary>
-public class MSSQLiteLoggerProvider : ILoggerProvider
+public class MELLoggerProvider : ILoggerProvider
 {
-    private readonly SQLiteWriter sharedLoggerWriter;
+    private readonly Logger sharedLoggerWriter;
     private readonly LoggerExternalScopeProvider scopeProvider = new LoggerExternalScopeProvider();
-    private readonly ConcurrentDictionary<string, MSSQLiteLogger> loggers = new();
+    private readonly ConcurrentDictionary<string, MELLogger> loggers = new();
     private readonly IDateTimeProvider dateTimeProvider;
 
     /// <summary>
@@ -32,12 +31,12 @@ public class MSSQLiteLoggerProvider : ILoggerProvider
 
 
     /// <summary>
-    /// Creates a new instance of the <see cref="MSSQLiteLoggerProvider"/> class.
+    /// Creates a new instance of the <see cref="MELLoggerProvider"/> class.
     /// </summary>
     /// <param name="fileName">The name of the SQLite database file.</param>
     /// <param name="batchingOptions">Options for configuring batch processing.</param>
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
-    private MSSQLiteLoggerProvider(
+    private MELLoggerProvider(
         string fileName, 
         BatchingOptions batchingOptions, 
         HouseKeepingOptions houseKeepingOptions,
@@ -45,7 +44,7 @@ public class MSSQLiteLoggerProvider : ILoggerProvider
     {
         this.dateTimeProvider = dateTimeProvider;
 
-        sharedLoggerWriter = new SQLiteWriter(
+        sharedLoggerWriter = new Logger(
             fileName: fileName,
             batchingOptions,
             houseKeepingOptions,
@@ -53,34 +52,34 @@ public class MSSQLiteLoggerProvider : ILoggerProvider
     }
 
     /// <summary>
-    /// Creates a new instance of <see cref="MSSQLiteLoggerProvider"/> with the specified file name.
+    /// Creates a new instance of <see cref="MELLoggerProvider"/> with the specified file name.
     /// </summary>
     /// <param name="fileName">The name of the SQLite database file.</param>
-    /// <returns>A new instance of <see cref="MSSQLiteLoggerProvider"/>.</returns>
-    public static MSSQLiteLoggerProvider Create(string fileName)
+    /// <returns>A new instance of <see cref="MELLoggerProvider"/>.</returns>
+    public static MELLoggerProvider Create(string fileName)
     {
         return Create(fileName, new BatchingOptions(), new HouseKeepingOptions());
     }
 
     /// <summary>
-    /// Creates a new instance of <see cref="MSSQLiteLoggerProvider"/> with the specified file name and batching options.
+    /// Creates a new instance of <see cref="MELLoggerProvider"/> with the specified file name and batching options.
     /// </summary>
     /// <param name="fileName">The name of the SQLite database file.</param>
     /// <param name="batchingOptions">Options for configuring batch processing.</param>
-    /// <returns>A new instance of <see cref="MSSQLiteLoggerProvider"/>.</returns>
-    public static MSSQLiteLoggerProvider Create(string fileName, BatchingOptions batchingOptions)
+    /// <returns>A new instance of <see cref="MELLoggerProvider"/>.</returns>
+    public static MELLoggerProvider Create(string fileName, BatchingOptions batchingOptions)
     {
         return Create(fileName, batchingOptions, new HouseKeepingOptions());
     }
 
     /// <summary>
-    /// Creates a new instance of <see cref="MSSQLiteLoggerProvider"/> with the specified file name, batching options, and housekeeping options.
+    /// Creates a new instance of <see cref="MELLoggerProvider"/> with the specified file name, batching options, and housekeeping options.
     /// </summary>
     /// <param name="fileName">The name of the SQLite database file.</param>
     /// <param name="batchingOptions">Options for configuring batch processing.</param>
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
-    /// <returns>A new instance of <see cref="MSSQLiteLoggerProvider"/>.</returns>
-    public static MSSQLiteLoggerProvider Create(string fileName, BatchingOptions batchingOptions, HouseKeepingOptions houseKeepingOptions)
+    /// <returns>A new instance of <see cref="MELLoggerProvider"/>.</returns>
+    public static MELLoggerProvider Create(string fileName, BatchingOptions batchingOptions, HouseKeepingOptions houseKeepingOptions)
     {
         return Create(
             fileName, 
@@ -91,19 +90,19 @@ public class MSSQLiteLoggerProvider : ILoggerProvider
 
 
     /// <summary>
-    /// Creates a new instance of <see cref="MSSQLiteLoggerProvider"/> with the specified file name, batching options, and housekeeping options.
+    /// Creates a new instance of <see cref="MELLoggerProvider"/> with the specified file name, batching options, and housekeeping options.
     /// </summary>
     /// <param name="fileName">The name of the SQLite database file.</param>
     /// <param name="batchingOptions">Options for configuring batch processing.</param>
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
-    /// <returns>A new instance of <see cref="MSSQLiteLoggerProvider"/>.</returns>
-    public static MSSQLiteLoggerProvider Create(
+    /// <returns>A new instance of <see cref="MELLoggerProvider"/>.</returns>
+    public static MELLoggerProvider Create(
         string fileName, 
         BatchingOptions batchingOptions, 
         HouseKeepingOptions houseKeepingOptions,
         IDateTimeProvider dateTimeProvider)
     {
-        return new MSSQLiteLoggerProvider(
+        return new MELLoggerProvider(
             fileName, 
             batchingOptions, 
             houseKeepingOptions,
@@ -122,13 +121,13 @@ public class MSSQLiteLoggerProvider : ILoggerProvider
     }
 
     /// <summary>
-    /// Creates a new instance of <see cref="MSSQLiteLogger"/> for the specified category name.
+    /// Creates a new instance of <see cref="MELLogger"/> for the specified category name.
     /// </summary>
     /// <param name="categoryName">The category name for messages produced by the logger.</param>
-    /// <returns>A new instance of <see cref="MSSQLiteLogger"/>.</returns>
-    private MSSQLiteLogger CreateMSSQLiteLogger(string categoryName)
+    /// <returns>A new instance of <see cref="MELLogger"/>.</returns>
+    private MELLogger CreateMSSQLiteLogger(string categoryName)
     {
-        var msSQLiteLogger = new MSSQLiteLogger(
+        var msSQLiteLogger = new MELLogger(
             categoryName: categoryName,
             externalSQLiteWriter: sharedLoggerWriter,
             scopeProvider: scopeProvider,

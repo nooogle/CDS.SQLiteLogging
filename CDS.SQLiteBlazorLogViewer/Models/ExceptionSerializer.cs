@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Collections;
 
-namespace CDS.SQLiteLogViewer.Models;
+namespace CDS.SQLiteBlazorLogViewer.Models;
 
 /// <summary>
 /// Provides methods for serializing and deserializing exceptions.

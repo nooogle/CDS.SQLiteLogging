@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace CDS.SQLiteLogViewer.Models;
+namespace CDS.SQLiteBlazorLogViewer.Models;
 
 /// <summary>
 /// Represents a serializable exception.

@@ -11,6 +11,7 @@
 
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <Platforms>AnyCPU;x64;ARM64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

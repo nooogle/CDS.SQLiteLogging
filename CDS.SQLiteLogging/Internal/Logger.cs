@@ -6,11 +6,11 @@ namespace CDS.SQLiteLogging;
 /// <summary>
 /// Provides writing capabilities for SQLite logging with caching, batching, and housekeeping.
 /// </summary>
-class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
+class Logger : IDisposable, ISQLiteWriterUtilities
 {
     private readonly ConnectionManager connectionManager;
     private readonly LogWriter writer;
-    private readonly SQLiteHousekeeper housekeeper;
+    private readonly Housekeeper housekeeper;
     private readonly BatchLogCache logCache;
     private bool disposed;
 
@@ -22,12 +22,12 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
 
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="SQLiteWriter"/> class.
+    /// Initializes a new instance of the <see cref="Logger"/> class.
     /// </summary>
     /// <param name="fileName">The name of the SQLite database file.</param>
     /// <param name="batchingOptions">Options for configuring batch processing.</param>
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
-    public SQLiteWriter(
+    public Logger(
         string fileName,
         BatchingOptions batchingOptions,
         HouseKeepingOptions houseKeepingOptions,
@@ -50,7 +50,7 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
         // Initialize housekeeper with defaults if not specified
         houseKeepingOptions ??= new HouseKeepingOptions();
 
-        housekeeper = new SQLiteHousekeeper(
+        housekeeper = new Housekeeper(
             connectionManager,
             houseKeepingOptions,
             dateTimeProvider);
@@ -59,7 +59,7 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
     /// <summary>
     /// Gets the log housekeeper instance.
     /// </summary>
-    public SQLiteHousekeeper Housekeeper => housekeeper;
+    public Housekeeper Housekeeper => housekeeper;
 
     /// <summary>
     /// Gets the number of entries currently pending in the cache.
@@ -74,7 +74,7 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
     {
         if (disposed)
         {
-            throw new ObjectDisposedException(nameof(SQLiteWriter));
+            throw new ObjectDisposedException(nameof(Logger));
         }
 
         logCache.Add(entry);
@@ -127,7 +127,7 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
     {
         if (disposed)
         {
-            throw new ObjectDisposedException(nameof(SQLiteWriter));
+            throw new ObjectDisposedException(nameof(Logger));
         }
 
         return housekeeper.DeleteAll();
@@ -141,7 +141,7 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
     {
         if (disposed)
         {
-            throw new ObjectDisposedException(nameof(SQLiteWriter));
+            throw new ObjectDisposedException(nameof(Logger));
         }
 
         return Task.Run(DeleteAll);
@@ -171,7 +171,7 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
     {
         if (disposed)
         {
-            throw new ObjectDisposedException(nameof(SQLiteWriter));
+            throw new ObjectDisposedException(nameof(Logger));
         }
 
         logCache.WaitUntilCacheIsEmpty(timeout);
@@ -186,7 +186,7 @@ class SQLiteWriter : IDisposable, ISQLiteWriterUtilities
     {
         if (disposed)
         {
-            throw new ObjectDisposedException(nameof(SQLiteWriter));
+            throw new ObjectDisposedException(nameof(Logger));
         }
 
         return Task.Run(() => logCache.WaitUntilCacheIsEmpty(timeout));

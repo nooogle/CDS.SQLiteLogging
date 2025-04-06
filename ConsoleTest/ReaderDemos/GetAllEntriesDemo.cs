@@ -1,5 +1,4 @@
 ﻿using CDS.SQLiteLogging;
-using Newtonsoft.Json;
 
 namespace ConsoleTest.ReaderDemos;
 
@@ -13,19 +12,9 @@ internal class GetAllEntriesDemo
     /// </summary>
     public void Run()
     {
-        // Get the filename of the database from the user
-        Console.WriteLine("Enter the filename of the database:");
-        string filename = Console.ReadLine()?.Trim('\"') ?? string.Empty;
-
-        // Check if the file exists
-        if (!File.Exists(filename))
-        {
-            Console.WriteLine("File not found.");
-            return;
-        }
-
         // Open the database using SQLiteReader
-        using var sqliteReader = new SQLiteReader(filename);
+        using var connectionManager = new ConnectionManager(DBPathCreator.Create());
+        using var sqliteReader = new Reader(connectionManager);
 
         // Display the number of entries in the database
         var numEntries = sqliteReader.GetNumberOfEntries();

@@ -57,11 +57,11 @@ public class HousekeepingTests
 
                 // Perform manual housekeeping to delete old log entries
                 using var connectionManager = new ConnectionManager(dbPath);
-                using var manualHousekeeper = new SQLiteHousekeeper(connectionManager, databaseTestHost.HouseKeepingOptions, mockDateTimeProvider);
+                using var manualHousekeeper = new Housekeeper(connectionManager, databaseTestHost.HouseKeepingOptions, mockDateTimeProvider);
                 manualHousekeeper.ExecuteHousekeeping();
 
                 // Get the log entries from the database
-                using var reader = new SQLiteReader(dbPath);
+                using var reader = new Reader(connectionManager);
                 var entries = reader.GetAllEntries();
 
                 // Assert that only 1 entry is left in the database, and it should be 1 day after the start time

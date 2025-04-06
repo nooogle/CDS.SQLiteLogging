@@ -8,7 +8,7 @@ namespace ConsoleTest.NonDIWriterDemos;
 /// <remarks>
 /// Initialises a new instance of the <see cref="LogLevelsDemo"/> class.
 /// </remarks>
-class LogLevelsDemo(CDS.SQLiteLogging.MSSQLiteLoggerProvider sqliteLoggerProvider)
+class LogLevelsDemo(CDS.SQLiteLogging.MEL.MELLoggerProvider sqliteLoggerProvider)
 {
     /// <summary>
     /// A logger
