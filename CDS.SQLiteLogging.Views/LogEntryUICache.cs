@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
-namespace CDS.SQLiteLogging;
+namespace CDS.SQLiteLogging.Views;
 
 
 /// <summary>

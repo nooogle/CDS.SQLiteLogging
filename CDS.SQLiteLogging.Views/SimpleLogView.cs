@@ -1,14 +1,14 @@
 ﻿using CDS.SQLiteLogging;
-using CDS.SQLiteLogging.Views;
 using Humanizer;
 using Microsoft.Extensions.Logging;
+using System.ComponentModel;
 
-namespace WinFormsTest.DomainSpecificLiveLogViewer;
+namespace CDS.SQLiteLogging.Views;
 
 /// <summary>
 /// A user control that displays live log entries.
 /// </summary>
-public partial class LiveLogViewList : UserControl
+public partial class SimpleLogView : UserControl
 {
     private readonly LogEntryUICache logEntryUICache;
 
@@ -24,6 +24,8 @@ public partial class LiveLogViewList : UserControl
     /// <summary>
     /// Gets or sets the filter function for log entries.
     /// </summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public Func<LogEntry, bool>? Filter
     {
         get => logEntryUICache.Filter;
@@ -31,9 +33,9 @@ public partial class LiveLogViewList : UserControl
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="LiveLogViewList"/> class.
+    /// Initializes a new instance of the <see cref="SimpleLogView"/> class.
     /// </summary>
-    public LiveLogViewList()
+    public SimpleLogView()
     {
         InitializeComponent();
         logEntryUICache = new LogEntryUICache();
@@ -81,24 +83,24 @@ public partial class LiveLogViewList : UserControl
     {
         var localTime = entry.Timestamp.ToLocalTime();
 
-        var listViewItem = new ListViewItem(localTime.ToString("T"))
+        var listViewItem = new ListViewItem(entry.DbId.ToString())
         {
             Tag = entry
         };
 
-        // Extract the class name from the category by dropping the namespace
-        var category = entry.Category?.Split('.').Last() ?? string.Empty;
-        listViewItem.SubItems.Add(category);
-
-        // Extract batch and loaf index from the log entry's scope
-        var scopes = entry.DeserialiseScopesJson();
-        var batch = scopes.TryGetValue("BatchNumber", out var batchValue) ? batchValue : string.Empty;
-        listViewItem.SubItems.Add(batch);
-
-        var loafIndex = scopes.TryGetValue("LoafNumber", out var loafIndexValue) ? loafIndexValue : string.Empty;
-        listViewItem.SubItems.Add(loafIndex);
-
+        // Add timestamp, category, and message to the ListViewItem
+        listViewItem.SubItems.Add(localTime.ToString("T"));
+        listViewItem.SubItems.Add(entry.Category ?? string.Empty);
         listViewItem.SubItems.Add(entry.RenderedMessage);
+
+        // Add scope info
+        listViewItem.SubItems.Add(entry.ScopesJson ?? string.Empty);
+
+
+        //// Extract batch and loaf index from the log entry's scope
+        //var scopes = entry.DeserialiseScopesJson();
+        //var batch = scopes.TryGetValue("BatchNumber", out var batchValue) ? batchValue : string.Empty;
+        //listViewItem.SubItems.Add(batch);
 
         // Set the background color based on the log level
         listViewItem.BackColor = entry.Level switch

@@ -1,4 +1,6 @@
-﻿namespace ConsoleTest.ReaderDemos;
+﻿using CDS.SQLiteLogging;
+
+namespace ConsoleTest.ReaderDemos;
 
 /// <summary>
 /// Provides functionality to display information about the SQLite database.
@@ -11,11 +13,10 @@ internal class DisplayDatabaseInfo
     public void Run()
     {
         // Open the database using SQLiteReader
-        using var connectionManager = new CDS.SQLiteLogging.ConnectionManager(DBPathCreator.Create());
-        using var sqliteReader = new CDS.SQLiteLogging.Reader(connectionManager);
+        using var sqliteReader = new Reader(DBPathCreator.Create());
 
         // Display the number of entries in the database
-        var numEntries = sqliteReader.GetNumberOfEntries();
+        var numEntries = sqliteReader.GetEntryCount();
         Console.WriteLine($"Number of entries: {numEntries}");
 
         // Display the database file size in MB

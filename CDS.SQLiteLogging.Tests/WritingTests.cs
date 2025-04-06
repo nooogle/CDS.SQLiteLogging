@@ -36,8 +36,7 @@ public class WritingTests
             onDatabaseClosed: (dbPath) =>
             {
                 // Assert
-                using var connectionManager = new ConnectionManager(dbPath);
-                using var reader = new Reader(connectionManager);
+                using var reader = new Reader(dbPath);
                 reader.GetAllEntries().Should().HaveCount(numberOfEntries);
             });
     }
@@ -61,8 +60,7 @@ public class WritingTests
             onDatabaseClosed: (dbPath) =>
             {
                 // Assert
-                using var connectionManager = new ConnectionManager(dbPath);
-                using var reader = new Reader(connectionManager);
+                using var reader = new Reader(dbPath);
                 var entries = reader.GetAllEntries();
                 entries.Should().HaveCount(1);
                 entries[0].RenderedMessage.Should().Be(message);
@@ -90,8 +88,7 @@ public class WritingTests
             onDatabaseClosed: (dbPath) =>
             {
                 // Assert
-                using var connectionManager = new ConnectionManager(dbPath);
-                using var reader = new Reader(connectionManager);
+                using var reader = new Reader(dbPath);
                 var entries = reader.GetAllEntries();
                 entries.Should().HaveCount(1);
                 entries[0].MessageTemplate.Should().Be(messageTemplate);
@@ -128,8 +125,7 @@ public class WritingTests
             onDatabaseClosed: (dbPath) =>
             {
                 // Assert
-                using var connectionManager = new ConnectionManager(dbPath);
-                using var reader = new Reader(connectionManager);
+                using var reader = new Reader(dbPath);
                 var entries = reader.GetAllEntries();
                 entries.Should().HaveCount(logEntries.Length);
 
@@ -170,8 +166,7 @@ public class WritingTests
             onDatabaseClosed: (dbPath) =>
             {
                 // Assert
-                using var connectionManager = new ConnectionManager(dbPath);
-                using var reader = new Reader(connectionManager);
+                using var reader = new Reader(dbPath);
                 var entries = reader.GetAllEntries();
                 entries.Should().HaveCount(1);
                 entries[0].RenderedMessage.Should().Be(message);
@@ -238,8 +233,7 @@ public class WritingTests
             onDatabaseClosed: (dbPath) =>
             {
                 // Assert
-                using var connectionManager = new ConnectionManager(dbPath);
-                using var reader = new Reader(connectionManager);
+                using var reader = new Reader(dbPath);
                 var entries = reader.GetAllEntries();
                 entries.Should().HaveCount(1);
                 entries[0].RenderedMessage.Should().Be(message);
@@ -277,8 +271,7 @@ public class WritingTests
             onDatabaseClosed: (dbPath) =>
             {
                 // Assert
-                using var connectionManager = new ConnectionManager(dbPath);
-                using var reader = new Reader(connectionManager);
+                using var reader = new Reader(dbPath);
                 var entries = reader.GetAllEntries();
                 entries.Should().HaveCount(logEntries.Length);
 
@@ -310,8 +303,7 @@ public class WritingTests
             onDatabaseClosed: (dbPath) =>
             {
                 // Assert
-                using var connectionManager = new ConnectionManager(dbPath);
-                using var reader = new Reader(connectionManager);
+                using var reader = new Reader(dbPath);
                 var entries = reader.GetAllEntries();
                 entries.Should().HaveCount(1);
                 entries[0].MessageTemplate.Should().Be(messageTemplate);

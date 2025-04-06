@@ -31,6 +31,16 @@ public partial class FormMain : Form
                 form.ShowDialog(this);
             });
 
+        group.AddDemo(
+            name: "Simple offline log viewer",
+            tooltip: "A simple offline log viewer demo",
+            parent: this,
+            action: () =>
+            {
+                using var form = new SimpleOfflineLogViewer.FormDemo();
+                form.ShowDialog(this);
+            });
+
         menuTree.ExpandAllGroups();
     }
 }

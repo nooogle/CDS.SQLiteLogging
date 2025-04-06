@@ -1,6 +1,6 @@
-﻿namespace WinFormsTest.SimpleListLogViewer
+﻿namespace CDS.SQLiteLogging.Views
 {
-    partial class SimpleLogViewList
+    partial class SimpleLogView
     {
         /// <summary> 
         /// Required designer variable.
@@ -30,11 +30,13 @@
         {
             components = new System.ComponentModel.Container();
             timerGrabPendingLogEntries = new System.Windows.Forms.Timer(components);
-            listViewLogEntries = new ListView();
-            columnHeaderType = new ColumnHeader();
+            listViewLogEntries = new DoubleBufferedListView();
             columnHeaderTime = new ColumnHeader();
+            columnHeaderCategory = new ColumnHeader();
             columnHeaderMsg = new ColumnHeader();
-            columnHeaderLiveID = new ColumnHeader();
+            columnHeaderID = new ColumnHeader();
+            columnHeaderScopes = new ColumnHeader();
+            columnHeaderException = new ColumnHeader();
             SuspendLayout();
             // 
             // timerGrabPendingLogEntries
@@ -45,7 +47,7 @@
             // 
             // listViewLogEntries
             // 
-            listViewLogEntries.Columns.AddRange(new ColumnHeader[] { columnHeaderLiveID, columnHeaderType, columnHeaderTime, columnHeaderMsg });
+            listViewLogEntries.Columns.AddRange(new ColumnHeader[] { columnHeaderID, columnHeaderTime, columnHeaderCategory, columnHeaderMsg, columnHeaderScopes, columnHeaderException });
             listViewLogEntries.Dock = DockStyle.Fill;
             listViewLogEntries.FullRowSelect = true;
             listViewLogEntries.GridLines = true;
@@ -53,47 +55,59 @@
             listViewLogEntries.Location = new Point(0, 0);
             listViewLogEntries.MultiSelect = false;
             listViewLogEntries.Name = "listViewLogEntries";
-            listViewLogEntries.Size = new Size(336, 204);
+            listViewLogEntries.Size = new Size(754, 204);
             listViewLogEntries.TabIndex = 0;
             listViewLogEntries.UseCompatibleStateImageBehavior = false;
             listViewLogEntries.View = View.Details;
             // 
-            // columnHeaderType
-            // 
-            columnHeaderType.Text = "Level";
-            columnHeaderType.Width = 100;
-            // 
             // columnHeaderTime
             // 
             columnHeaderTime.Text = "Time";
-            columnHeaderTime.Width = 140;
+            columnHeaderTime.Width = 120;
+            // 
+            // columnHeaderCategory
+            // 
+            columnHeaderCategory.Text = "Category";
+            columnHeaderCategory.Width = 120;
             // 
             // columnHeaderMsg
             // 
             columnHeaderMsg.Text = "Message";
             columnHeaderMsg.Width = 400;
             // 
-            // columnHeaderLiveID
+            // columnHeaderID
             // 
-            columnHeaderLiveID.Text = "LiveId";
+            columnHeaderID.Text = "ID";
             // 
-            // SimpleLogViewList
+            // columnHeaderScopes
+            // 
+            columnHeaderScopes.Text = "Scope(s)";
+            columnHeaderScopes.Width = 120;
+            // 
+            // columnHeaderException
+            // 
+            columnHeaderException.Text = "Exception";
+            columnHeaderException.Width = 120;
+            // 
+            // SimpleLogView
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(listViewLogEntries);
-            Name = "SimpleLogViewList";
-            Size = new Size(336, 204);
+            Name = "SimpleLogView";
+            Size = new Size(754, 204);
             ResumeLayout(false);
         }
 
         #endregion
 
         private System.Windows.Forms.Timer timerGrabPendingLogEntries;
-        private ListView listViewLogEntries;
+        private DoubleBufferedListView listViewLogEntries;
         private ColumnHeader columnHeaderTime;
         private ColumnHeader columnHeaderMsg;
-        private ColumnHeader columnHeaderType;
-        private ColumnHeader columnHeaderLiveID;
+        private ColumnHeader columnHeaderCategory;
+        private ColumnHeader columnHeaderID;
+        private ColumnHeader columnHeaderScopes;
+        private ColumnHeader columnHeaderException;
     }
 }

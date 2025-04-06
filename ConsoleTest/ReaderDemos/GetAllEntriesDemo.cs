@@ -13,11 +13,10 @@ internal class GetAllEntriesDemo
     public void Run()
     {
         // Open the database using SQLiteReader
-        using var connectionManager = new ConnectionManager(DBPathCreator.Create());
-        using var sqliteReader = new Reader(connectionManager);
+        using var sqliteReader = new Reader(DBPathCreator.Create());
 
         // Display the number of entries in the database
-        var numEntries = sqliteReader.GetNumberOfEntries();
+        var numEntries = sqliteReader.GetEntryCount();
         Console.WriteLine($"Number of entries: {numEntries}");
 
         // Retrieve and display all log entries

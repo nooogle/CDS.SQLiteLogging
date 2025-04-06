@@ -28,6 +28,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinFormsAppSeriLog", "WinFo
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SeriLogExperiments", "SeriLogExperiments", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CDS.SQLiteLogging.Views", "CDS.SQLiteLogging.Views\CDS.SQLiteLogging.Views.csproj", "{217046B0-76FD-47DA-A0BD-8CFB363BC122}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -109,6 +111,18 @@ Global
 		{D21E5EC6-A129-4AC6-4E1B-440596C56D6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D21E5EC6-A129-4AC6-4E1B-440596C56D6A}.Release|ARM64.ActiveCfg = Release|ARM64
 		{D21E5EC6-A129-4AC6-4E1B-440596C56D6A}.Release|x64.ActiveCfg = Release|x64
+		{217046B0-76FD-47DA-A0BD-8CFB363BC122}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{217046B0-76FD-47DA-A0BD-8CFB363BC122}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{217046B0-76FD-47DA-A0BD-8CFB363BC122}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{217046B0-76FD-47DA-A0BD-8CFB363BC122}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{217046B0-76FD-47DA-A0BD-8CFB363BC122}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{217046B0-76FD-47DA-A0BD-8CFB363BC122}.Debug|x64.Build.0 = Debug|Any CPU
+		{217046B0-76FD-47DA-A0BD-8CFB363BC122}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{217046B0-76FD-47DA-A0BD-8CFB363BC122}.Release|Any CPU.Build.0 = Release|Any CPU
+		{217046B0-76FD-47DA-A0BD-8CFB363BC122}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{217046B0-76FD-47DA-A0BD-8CFB363BC122}.Release|ARM64.Build.0 = Release|Any CPU
+		{217046B0-76FD-47DA-A0BD-8CFB363BC122}.Release|x64.ActiveCfg = Release|Any CPU
+		{217046B0-76FD-47DA-A0BD-8CFB363BC122}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -18,8 +18,7 @@ internal class DeleteAllDemo
         };
 
         // create the housekeeper
-        using var connectionManager = new CDS.SQLiteLogging.ConnectionManager(DBPathCreator.Create());
-        using var housekeeper = new CDS.SQLiteLogging.Housekeeper(connectionManager, options, new CDS.SQLiteLogging.DefaultDateTimeProvider());
+        using var housekeeper = new CDS.SQLiteLogging.Housekeeper(DBPathCreator.Create(), options, new CDS.SQLiteLogging.DefaultDateTimeProvider());
 
         // delete all log entries
         int numberOfRecordsDeleted = housekeeper.DeleteAll();

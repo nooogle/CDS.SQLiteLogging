@@ -32,7 +32,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormDemo));
             timer = new System.Windows.Forms.Timer(components);
             systemInfoPanel1 = new WinFormsTest.Utils.SystemInfoPanel();
-            simpleLogViewList = new SimpleLogViewList();
+            simpleLogViewList = new CDS.SQLiteLogging.Views.SimpleLogView();
             btnClear = new Button();
             toolTip1 = new ToolTip(components);
             SuspendLayout();
@@ -71,7 +71,7 @@
             btnClear.UseVisualStyleBackColor = true;
             btnClear.Click += btnClear_Click;
             // 
-            // FormMain
+            // FormDemo
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -79,7 +79,7 @@
             Controls.Add(btnClear);
             Controls.Add(simpleLogViewList);
             Controls.Add(systemInfoPanel1);
-            Name = "FormMain";
+            Name = "FormDemo";
             Text = "Form1";
             Load += FormMain_Load;
             ResumeLayout(false);
@@ -88,7 +88,7 @@
         #endregion
         private System.Windows.Forms.Timer timer;
         private Utils.SystemInfoPanel systemInfoPanel1;
-        private SimpleLogViewList simpleLogViewList;
+        private CDS.SQLiteLogging.Views.SimpleLogView simpleLogViewList;
         private Button btnClear;
         private ToolTip toolTip1;
     }

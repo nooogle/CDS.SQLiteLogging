@@ -12,19 +12,36 @@ public class Housekeeper : IDisposable
     private bool disposed;
     private readonly HouseKeepingOptions options;
     private int cleanupInProgress;
-    private IDateTimeProvider dateTimeProvider;
+    private readonly IDateTimeProvider dateTimeProvider;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Housekeeper"/> class.
+    /// </summary>
+    /// <param name="dateTimeProvider">The date time provider.</param>
+    /// <param name="dbPath">The path to the SQLite database file.</param>
+    /// <param name="options">The housekeeping configuration options.</param>
+    public Housekeeper(
+        string dbPath,
+        HouseKeepingOptions options,
+        IDateTimeProvider dateTimeProvider) : this(
+            new ConnectionManager(dbPath),
+            options,
+            dateTimeProvider)
+    {
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Housekeeper"/> class.
     /// </summary>
     /// <param name="connectionManager">The SQLite connection manager.</param>
+    /// <param name="dateTimeProvider">The date time provider.</param>
     /// <param name="options">The housekeeping configuration options.</param>
-    public Housekeeper(
+    internal Housekeeper(
         ConnectionManager connectionManager,
         HouseKeepingOptions options,
         IDateTimeProvider dateTimeProvider)
     {
-        this.dateTimeProvider = dateTimeProvider;
+        this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         this.connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
         this.options = options ?? throw new ArgumentNullException(nameof(options));
 
@@ -150,7 +167,6 @@ public class Housekeeper : IDisposable
         return deletedCount;
     }
 
-
     /// <summary>
     /// Disposes resources used by the housekeeper.
     /// </summary>
@@ -173,6 +189,9 @@ public class Housekeeper : IDisposable
                 // Stop the timer
                 cleanupTimer?.Dispose();
                 cleanupTimer = null;
+
+                // Dispose the connection manager
+                connectionManager?.Dispose();
             }
             disposed = true;
         }
