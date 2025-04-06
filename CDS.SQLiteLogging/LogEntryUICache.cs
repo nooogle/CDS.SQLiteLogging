@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace CDS.SQLiteLogging.Views;
+namespace CDS.SQLiteLogging;
 
 
 /// <summary>
