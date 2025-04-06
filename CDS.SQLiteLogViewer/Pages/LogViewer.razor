@@ -6,6 +6,12 @@
 
 @inject IJSRuntime JS
 
+<style>
+    .exception-row:hover {
+        background-color: rgba(0,0,0,0.04);
+    }
+</style>
+
 <MudContainer>
     <MudText Typo="Typo.h3" Class="mb-4">Log Viewer</MudText>
 
@@ -32,27 +38,45 @@
                   Hover="true"
                   Bordered="true"
                   Striped="true"
+                  Dense="true"
                   Loading="@isLoading"
                   LoadingProgressColor="Color.Primary"
                   SortLabel="Sort By">
             <HeaderContent>
-                <MudTh><MudTableSortLabel T="LogEntry" SortBy="x => x.DbId">Id</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel T="LogEntry" SortBy="x => x.Timestamp">Timestamp</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel T="LogEntry" SortBy="x => x.Category">Category</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel T="LogEntry" SortBy="x => x.Level">Level</MudTableSortLabel></MudTh>
+                <MudTh>
+                    <MudTableSortLabel T="LogEntry" SortBy="x => x.DbId">Id</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel T="LogEntry" SortBy="x => x.Level">Level</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel T="LogEntry" SortBy="x => x.Timestamp">Timestamp</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel T="LogEntry" SortBy="x => x.Category">Category</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel T="LogEntry" SortBy="x => x.ExceptionMessage">Exception</MudTableSortLabel>
+                </MudTh>
                 <MudTh>Message</MudTh>
             </HeaderContent>
+
             <RowTemplate>
                 <MudTd DataLabel="Id">@context.DbId</MudTd>
-                <MudTd DataLabel="Timestamp">@context.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</MudTd>
-                <MudTd DataLabel="Category">@context.Category</MudTd>
                 <MudTd DataLabel="Level">
                     <MudChip T="string" Color="@GetLevelColor(context.Level)" Size="Size.Small">
                         @context.Level.ToString()
                     </MudChip>
                 </MudTd>
-                <MudTd DataLabel="Message">@context.RenderedMessage</MudTd>
+                <MudTd DataLabel="Timestamp">@context.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff")</MudTd>
+                <MudTd DataLabel="Category">@context.Category</MudTd>
+                <MudTd DataLabel="Message" Style="white-space: pre-wrap; word-wrap: break-word;">@context.RenderedMessage</MudTd>
+                <MudTd DataLabel="Exception">@context.ExceptionMessage</MudTd>
             </RowTemplate>
+
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
         </MudTable>
     }
 </MudContainer>
@@ -61,6 +85,7 @@
     private List<LogEntry>? entries;
     private string? searchTerm;
     private bool isLoading = false;
+    private HashSet<LogEntry> expandedRows = new();
 
     private IEnumerable<LogEntry> FilteredEntries => entries?.Where(entry =>
         string.IsNullOrWhiteSpace(searchTerm) ||
@@ -69,6 +94,9 @@
         entry.EventName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true
     ) ?? Array.Empty<LogEntry>();
 
+    /// <summary>
+    /// Handles file selection and loads the SQLite DB.
+    /// </summary>
     private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
         isLoading = true;
@@ -89,7 +117,7 @@
         }
         catch (Exception ex)
         {
-            // Consider adding MudBlazor snackbar notification for errors
+            // Consider adding MudBlazor Snackbar notification for errors.
             Console.WriteLine($"Error loading database: {ex.Message}");
         }
         finally
@@ -98,6 +126,9 @@
         }
     }
 
+    /// <summary>
+    /// Returns the MudBlazor color corresponding to the log level.
+    /// </summary>
     private Color GetLevelColor(LogLevel level) => level switch
     {
         LogLevel.Trace => Color.Default,
@@ -106,9 +137,12 @@
         LogLevel.Warning => Color.Warning,
         LogLevel.Error => Color.Error,
         LogLevel.Critical => Color.Error,
-        _ => Color.Default
+        _ => Color.Default,
     };
 
+    /// <summary>
+    /// Maps a data row dictionary to a LogEntry object.
+    /// </summary>
     private LogEntry MapToLogEntry(Dictionary<string, JsonElement> row)
     {
         try
@@ -116,23 +150,38 @@
             return new LogEntry
                 {
                     DbId = row.TryGetValue("DbId", out var dbId) ? dbId.GetInt64() : 0,
-                    Category = row.TryGetValue("Category", out var category) ? category.ValueKind != JsonValueKind.Null ? category.GetString() : null : null,
+                    Category = row.TryGetValue("Category", out var category)
+                                ? category.ValueKind != JsonValueKind.Null ? category.GetString() : null
+                                : null,
                     EventId = row.TryGetValue("EventId", out var eventId) ? eventId.GetInt32() : 0,
-                    EventName = row.TryGetValue("EventName", out var eventName) ? eventName.ValueKind != JsonValueKind.Null ? eventName.GetString() : null : null,
-                    Timestamp = row.TryGetValue("Timestamp", out var timestamp) && timestamp.ValueKind != JsonValueKind.Null ?
-                        DateTimeOffset.Parse(timestamp.GetString() ?? DateTimeOffset.Now.ToString()) : DateTimeOffset.Now,
-                    Level = row.TryGetValue("Level", out var level) ?
-                        Enum.TryParse<LogLevel>(level.GetInt32().ToString(), out var lvl) ? lvl : LogLevel.Information : LogLevel.Information,
-                    MessageTemplate = row.TryGetValue("MessageTemplate", out var msgTemplate) ?
-                        msgTemplate.ValueKind != JsonValueKind.Null ? msgTemplate.GetString() ?? "" : "" : "",
-                    RenderedMessage = row.TryGetValue("RenderedMessage", out var rendMsg) ?
-                        rendMsg.ValueKind != JsonValueKind.Null ? rendMsg.GetString() ?? "" : "" : "",
-                    ExceptionJson = row.TryGetValue("ExceptionJson", out var exJson) ?
-                        exJson.ValueKind != JsonValueKind.Null ? exJson.GetString() : null : null,
-                    ScopesJson = row.TryGetValue("ScopesJson", out var scopesJson) ?
-                        scopesJson.ValueKind != JsonValueKind.Null ? scopesJson.GetString() : null : null,
-                    Properties = row.TryGetValue("Properties", out var props) && props.ValueKind != JsonValueKind.Null ?
-                        ParseProperties(props.GetString()) : new Dictionary<string, object>()
+                    EventName = row.TryGetValue("EventName", out var eventName)
+                                ? eventName.ValueKind != JsonValueKind.Null ? eventName.GetString() : null
+                                : null,
+                    Timestamp = row.TryGetValue("Timestamp", out var timestamp) && timestamp.ValueKind != JsonValueKind.Null
+                                ? DateTimeOffset.Parse(timestamp.GetString() ?? DateTimeOffset.Now.ToString())
+                                : DateTimeOffset.Now,
+                    Level = row.TryGetValue("Level", out var level)
+                            ? Enum.TryParse<LogLevel>(level.GetInt32().ToString(), out var lvl) ? lvl : LogLevel.Information
+                            : LogLevel.Information,
+                    MessageTemplate = row.TryGetValue("MessageTemplate", out var msgTemplate)
+                                      ? msgTemplate.ValueKind != JsonValueKind.Null ? msgTemplate.GetString() ?? string.Empty : string.Empty
+                                      : string.Empty,
+                    RenderedMessage = row.TryGetValue("RenderedMessage", out var rendMsg)
+                                      ? rendMsg.ValueKind != JsonValueKind.Null ? rendMsg.GetString() ?? string.Empty : string.Empty
+                                      : string.Empty,
+
+                    SerializedException = Models.ExceptionSerializer.FromJson(
+                        row.TryGetValue("ExceptionJson", out var exJson)
+                            ? (exJson.ValueKind != JsonValueKind.Null)
+                                ? exJson.GetString()
+                                : null
+                            : null),
+                    ScopesJson = row.TryGetValue("ScopesJson", out var scopesJson)
+                                 ? scopesJson.ValueKind != JsonValueKind.Null ? scopesJson.GetString() : null
+                                 : null,
+                    Properties = row.TryGetValue("Properties", out var props) && props.ValueKind != JsonValueKind.Null
+                                 ? ParseProperties(props.GetString())
+                                 : new Dictionary<string, object>()
                 };
         }
         catch (Exception ex)
@@ -148,10 +197,15 @@
         }
     }
 
+    /// <summary>
+    /// Parses a JSON string into a dictionary.
+    /// </summary>
     private IReadOnlyDictionary<string, object> ParseProperties(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
+        {
             return new Dictionary<string, object>();
+        }
 
         try
         {
