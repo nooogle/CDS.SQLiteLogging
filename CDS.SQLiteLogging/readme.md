@@ -1,8 +1,5 @@
 ﻿# CDS.SQLiteLogging
 
-
-# CDS.SQLiteLogging
-
 CDS.SQLiteLogging is a logging library for .NET applications that uses SQLite for storing 
 log entries. It supports batch processing, housekeeping, and integrates with 
 the Microsoft.Extensions.Logging framework.

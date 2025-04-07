@@ -20,9 +20,15 @@ public class Reader : IDisposable
     /// <summary>
     /// Initializes a new instance of the <see cref="Reader"/> class.
     /// </summary>
-    /// <param name="dbPath">The path to the SQLite database file.</param>
+    /// <param name="dbPath">The path to the SQLite database file. This MUST exist!</param>
+    /// <exception cref="FileNotFoundException">Thrown when the database file does not exist.</exception>"
     public Reader(string dbPath)
     {
+        if (!File.Exists(dbPath))
+        {
+            throw new FileNotFoundException($"Database file not found: {dbPath}");
+        }
+
         connectionManager = new ConnectionManager(dbPath);
         tableName = Internal.TableCreator.TableName;
     }

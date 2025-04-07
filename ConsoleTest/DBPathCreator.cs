@@ -14,7 +14,7 @@ static class DBPathCreator
     public static string Create()
     {
         return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
             nameof(CDS),
             nameof(CDS.SQLiteLogging),
             nameof(ConsoleTest),
