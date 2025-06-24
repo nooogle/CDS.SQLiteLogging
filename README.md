@@ -3,6 +3,9 @@
 
 ![CI](https://github.com/nooogle/CDS.SQLiteLogging/actions/workflows/ci.yml/badge.svg)
 
+![CI](https://github.com/nooogle/CDS.SQLiteLogging/actions/workflows/ci.yml/badge.svg?branch=master)
+
+
 CDS.SQLiteLogging is a logging library for .NET applications that uses SQLite for storing 
 log entries. It supports batch processing, housekeeping, and integrates with 
 the Microsoft.Extensions.Logging framework.
