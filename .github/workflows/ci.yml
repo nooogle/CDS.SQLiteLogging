@@ -52,7 +52,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: test-results-${{ runner.os }}
-        path: ./test-results/**/*.trx
+        path: '**/test-results/**/*.trx'
 
     - name: Upload NuGet Packages (only on tag pushes)
       if: startsWith(github.ref, 'refs/tags/v')
