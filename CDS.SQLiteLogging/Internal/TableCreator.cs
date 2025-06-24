@@ -37,6 +37,7 @@ class TableCreator
             "EventName TEXT",
             "Timestamp TEXT",
             "Level INTEGER",
+            "ManagedThreadId INTEGER",
             "MessageTemplate TEXT",
             "Properties TEXT",
             "RenderedMessage TEXT",

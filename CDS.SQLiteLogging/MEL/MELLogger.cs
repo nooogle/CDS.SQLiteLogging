@@ -13,7 +13,7 @@ public class MELLogger : ILogger
     /// Version that will increment every time the database scheme is modified.
     /// This number can be used on the database file name to ensure compatibility.
     /// </summary>
-    public static int DBSchemaVersion { get; } = 8;
+    public static int DBSchemaVersion { get; } = 9;
 
 
     private readonly string categoryName;

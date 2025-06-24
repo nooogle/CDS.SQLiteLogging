@@ -77,6 +77,11 @@ public class LogEntry
     public LogLevel Level { get; set; }
 
     /// <summary>
+    /// Gets or sets the managed thread identifier for the log entry.
+    /// </summary>
+    public int ManagedThreadId { get; set; }
+
+    /// <summary>
     /// Gets or sets the message of the log entry. If used in the context of structured logging, this should be a template.
     /// For example, "User {Username} logged in.". Use the MsgParams for the actual values.
     /// </summary>
@@ -112,6 +117,7 @@ public class LogEntry
     public LogEntry()
     {
         Timestamp = DateTimeOffset.Now;
+        ManagedThreadId = Environment.CurrentManagedThreadId;
     }
 
     /// <summary>
@@ -139,6 +145,8 @@ public class LogEntry
     {
         // Assign a unique LiveId for this log entry
         LiveId = nextLiveId++;
+
+        ManagedThreadId = Environment.CurrentManagedThreadId;
 
         Timestamp = timeStamp;
         Category = category;
