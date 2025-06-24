@@ -1,6 +1,4 @@
 ﻿using CDS.SQLiteLogging;
-using CDS.SQLiteLogging.Views;
-using Humanizer;
 using Microsoft.Extensions.Logging;
 
 namespace WinFormsTest.DomainSpecificLiveLogViewer;
@@ -127,5 +125,18 @@ public partial class LiveLogViewList : UserControl
     {
         logEntryUICache.Clear();
         listViewLogEntries.Items.Clear();
+    }
+
+
+    /// <summary>
+    /// Gets the database IDs of the selected log entries.
+    /// </summary>
+    public long[] GetSelectedLogDbIds()
+    {
+        return listViewLogEntries.SelectedItems
+            .Cast<ListViewItem>()
+            .Where(item => item.Tag is LogEntry)
+            .Select(item => ((LogEntry)item.Tag!).DbId)
+            .ToArray();
     }
 }

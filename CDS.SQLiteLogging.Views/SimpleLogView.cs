@@ -130,4 +130,17 @@ public partial class SimpleLogView : UserControl
         logEntryUICache.Clear();
         listViewLogEntries.Items.Clear();
     }
+
+
+    /// <summary>
+    /// Gets the IDs of the selected log entries in the ListView.
+    /// </summary>
+    public long[] GetSelectedLogIDs()
+    {
+        return listViewLogEntries.SelectedItems
+            .Cast<ListViewItem>()
+            .Where(item => item.Tag is LogEntry)
+            .Select(item => ((LogEntry)item.Tag!).DbId)
+            .ToArray();
+    }
 }

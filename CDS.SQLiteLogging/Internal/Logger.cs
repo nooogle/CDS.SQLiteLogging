@@ -1,5 +1,4 @@
 using CDS.SQLiteLogging.Internal;
-using System.Collections.Immutable;
 
 namespace CDS.SQLiteLogging;
 
@@ -132,6 +131,20 @@ class Logger : IDisposable, ISQLiteWriterUtilities
 
         return housekeeper.DeleteAll();
     }
+
+
+    /// <inheritdoc />
+    public async Task DeleteByIds(long[] ids)
+    {
+        if (disposed)
+        {
+            throw new ObjectDisposedException(nameof(Logger));
+        }
+
+        await housekeeper.DeleteByIdsAsync(ids);
+    }
+
+
 
     /// <summary>
     /// Deletes all log entries from the database asynchronously.

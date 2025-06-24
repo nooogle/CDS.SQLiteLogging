@@ -196,5 +196,49 @@ public class Housekeeper : IDisposable
             disposed = true;
         }
     }
-}
 
+    /// <summary>
+    /// Deletes entries by their IDs.
+    /// </summary>
+    public async Task DeleteByIdsAsync(long[] ids)
+    {
+        if (disposed)
+        {
+            throw new ObjectDisposedException(nameof(Housekeeper));
+        }
+
+        if (ids == null || ids.Length == 0)
+        {
+            return; // Nothing to delete
+        }
+
+        // Batch size to avoid exceeding SQLite's parameter limit (default is 999)
+        const int batchSize = 500;
+
+        for (int i = 0; i < ids.Length; i += batchSize)
+        {
+            var batch = ids.Skip(i).Take(batchSize).ToArray();
+
+            await connectionManager.ExecuteInTransactionAsync(async transaction =>
+            {
+                // Build parameterized query
+                var parameterNames = new List<string>(batch.Length);
+                var cmd = new SqliteCommand
+                {
+                    Connection = connectionManager.Connection,
+                    Transaction = transaction
+                };
+
+                for (int j = 0; j < batch.Length; j++)
+                {
+                    string paramName = $"@id{j}";
+                    parameterNames.Add(paramName);
+                    cmd.Parameters.AddWithValue(paramName, batch[j]);
+                }
+
+                cmd.CommandText = $"DELETE FROM {TableCreator.TableName} WHERE DbId IN ({string.Join(",", parameterNames)})";
+                await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+            }).ConfigureAwait(false);
+        }
+    }
+}

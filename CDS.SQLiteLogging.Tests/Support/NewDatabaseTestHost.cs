@@ -19,11 +19,8 @@ class NewDatabaseTestHost
     {
         // Arrange
         string dbPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            nameof(CDS),
-            nameof(SQLiteLogging),
-            nameof(Tests),
-            $"TestLog_V{MEL.MELLogger.DBSchemaVersion}.db");
+            Path.GetTempPath(),
+            $"TestLog_{Guid.NewGuid()}_V{MEL.MELLogger.DBSchemaVersion}.db");
 
         // Delete the database if it exists
         if (File.Exists(dbPath))

@@ -11,9 +11,6 @@
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <Title>SQLite logging</Title>
     <Description>Library for logging using an SQLite backend</Description>
-    <Authors>Jon Shadforth</Authors>
-    <Company>Carpe Diem Systems</Company>
-    <Copyright>Copyright (c) 2025 Carpe Diem Systems</Copyright>
     <PackageTags>logging, sqlite, database</PackageTags>
     <PackageProjectUrl>https://github.com/nooogle/CDS.SQLiteLogging</PackageProjectUrl>
     <RepositoryUrl>https://github.com/nooogle/CDS.SQLiteLogging</RepositoryUrl>
@@ -42,10 +39,6 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.3" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.3" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.3" />
-    <PackageReference Include="Nerdbank.GitVersioning" Version="3.7.115">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.Collections.Immutable" Version="9.0.3" />
   </ItemGroup>

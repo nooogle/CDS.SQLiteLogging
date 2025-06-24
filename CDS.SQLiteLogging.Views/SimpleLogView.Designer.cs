@@ -31,10 +31,10 @@
             components = new System.ComponentModel.Container();
             timerGrabPendingLogEntries = new System.Windows.Forms.Timer(components);
             listViewLogEntries = new DoubleBufferedListView();
+            columnHeaderID = new ColumnHeader();
             columnHeaderTime = new ColumnHeader();
             columnHeaderCategory = new ColumnHeader();
             columnHeaderMsg = new ColumnHeader();
-            columnHeaderID = new ColumnHeader();
             columnHeaderScopes = new ColumnHeader();
             columnHeaderException = new ColumnHeader();
             SuspendLayout();
@@ -53,12 +53,15 @@
             listViewLogEntries.GridLines = true;
             listViewLogEntries.HeaderStyle = ColumnHeaderStyle.Nonclickable;
             listViewLogEntries.Location = new Point(0, 0);
-            listViewLogEntries.MultiSelect = false;
             listViewLogEntries.Name = "listViewLogEntries";
             listViewLogEntries.Size = new Size(754, 204);
             listViewLogEntries.TabIndex = 0;
             listViewLogEntries.UseCompatibleStateImageBehavior = false;
             listViewLogEntries.View = View.Details;
+            // 
+            // columnHeaderID
+            // 
+            columnHeaderID.Text = "ID";
             // 
             // columnHeaderTime
             // 
@@ -74,10 +77,6 @@
             // 
             columnHeaderMsg.Text = "Message";
             columnHeaderMsg.Width = 400;
-            // 
-            // columnHeaderID
-            // 
-            columnHeaderID.Text = "ID";
             // 
             // columnHeaderScopes
             // 

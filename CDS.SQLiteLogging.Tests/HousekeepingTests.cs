@@ -60,12 +60,46 @@ public class HousekeepingTests
                 manualHousekeeper.ExecuteHousekeeping();
 
                 // Get the log entries from the database
-                var reader = new Reader(dbPath);
+                using var reader = new Reader(dbPath);
                 var entries = reader.GetAllEntries();
 
                 // Assert that only 1 entry is left in the database, and it should be 1 day after the start time
                 entries.Should().HaveCount(1);
                 entries[0].Timestamp.Should().Be(logEntryStartTime.AddHours(24));
             });
+    }
+
+
+    [TestMethod]
+    public void DeleteByIds_ShouldOnlyDelete_BySelectedIds()
+    {
+        var databaseTestHost = new NewDatabaseTestHost();
+        databaseTestHost.DateTimeProvider = new DefaultDateTimeProvider();
+        databaseTestHost.HouseKeepingOptions.Mode = HousekeepingMode.Manual;
+
+        databaseTestHost.Run(
+            onDatabaseCreated: (serviceProvider, dbPath) =>
+            {
+                var logger = serviceProvider.GetRequiredService<ILogger<WritingTests>>();
+                for (int i = 0; i < 25; i++)
+                {
+                    logger.LogInformation($"Log entry {i}");
+                }
+            },
+            onDatabaseClosed: dbPath =>
+            {
+                using var reader = new Reader(dbPath);
+                var entries = reader.GetAllEntries();
+                entries.Should().HaveCount(25);
+
+                var idsToDelete = entries.Take(10).Select(e => e.DbId).ToArray();
+                using var manualHousekeeper = new Housekeeper(dbPath, databaseTestHost.HouseKeepingOptions, new DefaultDateTimeProvider());
+                manualHousekeeper.DeleteByIdsAsync(idsToDelete).GetAwaiter().GetResult();
+
+                var remainingEntries = reader.GetAllEntries();
+                remainingEntries.Should().HaveCount(15);
+                remainingEntries.Select(e => e.DbId).Should().NotContain(idsToDelete);
+            }
+        );
     }
 }

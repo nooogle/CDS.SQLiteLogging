@@ -131,10 +131,12 @@ public class WritingTests
 
                 for (int i = 0; i < logEntries.Length; i++)
                 {
-                    entries[i].MessageTemplate.Should().Be(messageTemplate);
-                    entries[i].Properties.Should().ContainKey("Username").WhoseValue.Should().Be(logEntries[i].Username);
-                    entries[i].Properties.Should().ContainKey("Action").WhoseValue.Should().Be(logEntries[i].Action);
-                    entries[i].Properties.Should().ContainKey("ActionTime").WhoseValue.Should().Be(logEntries[i].ActionTime);
+                    int reverseOrderIndex = logEntries.Length - 1 - i;
+
+                    entries[reverseOrderIndex].MessageTemplate.Should().Be(messageTemplate);
+                    entries[reverseOrderIndex].Properties.Should().ContainKey("Username").WhoseValue.Should().Be(logEntries[i].Username);
+                    entries[reverseOrderIndex].Properties.Should().ContainKey("Action").WhoseValue.Should().Be(logEntries[i].Action);
+                    entries[reverseOrderIndex].Properties.Should().ContainKey("ActionTime").WhoseValue.Should().Be(logEntries[i].ActionTime);
                 }
             });
     }
@@ -277,8 +279,9 @@ public class WritingTests
 
                 for (int i = 0; i < logEntries.Length; i++)
                 {
-                    entries[i].Level.Should().Be(logEntries[i].Level);
-                    entries[i].RenderedMessage.Should().Be(logEntries[i].Message);
+                    int reverseOrderIndex = logEntries.Length - 1 - i;
+                    entries[reverseOrderIndex].Level.Should().Be(logEntries[i].Level);
+                    entries[reverseOrderIndex].RenderedMessage.Should().Be(logEntries[i].Message);
                 }
             });
     }

@@ -52,7 +52,6 @@
             listViewLogEntries.GridLines = true;
             listViewLogEntries.HeaderStyle = ColumnHeaderStyle.Nonclickable;
             listViewLogEntries.Location = new Point(0, 0);
-            listViewLogEntries.MultiSelect = false;
             listViewLogEntries.Name = "listViewLogEntries";
             listViewLogEntries.Size = new Size(754, 204);
             listViewLogEntries.TabIndex = 0;

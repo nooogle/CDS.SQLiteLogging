@@ -92,5 +92,27 @@
             reader?.Dispose();
             reader = null;
         }
+
+        private async void btnDeleteSelected_Click(object sender, EventArgs e)
+        {
+            var selectedEntries = simpleLogView.GetSelectedLogIDs();
+
+            var houseKingOptions = new CDS.SQLiteLogging.HouseKeepingOptions
+            {
+                Mode = CDS.SQLiteLogging.HousekeepingMode.Manual,
+            };
+
+            using var housekeeper = new CDS.SQLiteLogging.Housekeeper(
+                dbPath: openFileDialog.FileName,
+                options: houseKingOptions,
+                dateTimeProvider: new CDS.SQLiteLogging.DefaultDateTimeProvider());
+
+            await housekeeper.DeleteByIdsAsync(selectedEntries);
+
+            ReselectData();
+        }
     }
 }
+
+
+

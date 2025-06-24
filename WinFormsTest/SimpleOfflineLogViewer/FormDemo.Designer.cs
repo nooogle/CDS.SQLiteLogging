@@ -37,6 +37,7 @@
             simpleLogView = new CDS.SQLiteLogging.Views.SimpleLogView();
             label1 = new Label();
             textBoxQuery = new TextBox();
+            btnDeleteSelected = new Button();
             menuStrip1.SuspendLayout();
             SuspendLayout();
             // 
@@ -82,10 +83,10 @@
             // simpleLogView
             // 
             simpleLogView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            simpleLogView.Location = new Point(12, 74);
+            simpleLogView.Location = new Point(12, 116);
             simpleLogView.MaxQueueSize = 1000;
             simpleLogView.Name = "simpleLogView";
-            simpleLogView.Size = new Size(776, 364);
+            simpleLogView.Size = new Size(776, 322);
             simpleLogView.TabIndex = 1;
             // 
             // label1
@@ -108,11 +109,22 @@
             textBoxQuery.Text = "SELECT * FROM {tableName} ORDER BY Timestamp DESC LIMIT 10;";
             textBoxQuery.KeyDown += textBoxQuery_KeyDown;
             // 
+            // btnDeleteSelected
+            // 
+            btnDeleteSelected.Location = new Point(29, 87);
+            btnDeleteSelected.Name = "btnDeleteSelected";
+            btnDeleteSelected.Size = new Size(108, 23);
+            btnDeleteSelected.TabIndex = 7;
+            btnDeleteSelected.Text = "Delete selected";
+            btnDeleteSelected.UseVisualStyleBackColor = true;
+            btnDeleteSelected.Click += btnDeleteSelected_Click;
+            // 
             // FormDemo
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
+            Controls.Add(btnDeleteSelected);
             Controls.Add(textBoxQuery);
             Controls.Add(label1);
             Controls.Add(simpleLogView);
@@ -138,5 +150,6 @@
         private CDS.SQLiteLogging.Views.SimpleLogView simpleLogView;
         private Label label1;
         private TextBox textBoxQuery;
+        private Button btnDeleteSelected;
     }
 }
