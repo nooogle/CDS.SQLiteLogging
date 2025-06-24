@@ -198,6 +198,7 @@ public class Reader : IDisposable
             EventName = reader.GetString(reader.GetOrdinal(nameof(LogEntry.EventName))),
             Timestamp = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal(nameof(LogEntry.Timestamp)))),
             Level = (LogLevel)reader.GetInt32(reader.GetOrdinal(nameof(LogEntry.Level))),
+            ManagedThreadId = reader.GetInt32(reader.GetOrdinal(nameof(LogEntry.ManagedThreadId))),
             MessageTemplate = reader.GetString(reader.GetOrdinal(nameof(LogEntry.MessageTemplate))),
             RenderedMessage = reader.GetString(reader.GetOrdinal(nameof(LogEntry.RenderedMessage))),
             ExceptionJson = reader.GetString(reader.GetOrdinal(nameof(LogEntry.ExceptionJson))),

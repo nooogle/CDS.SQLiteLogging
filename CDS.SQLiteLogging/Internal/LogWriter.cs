@@ -20,9 +20,9 @@ class LogWriter
         // Predefined SQL INSERT command
         sqlInsert = $@"
             INSERT INTO {tableName} (
-                Category, EventId, EventName, Timestamp, Level, MessageTemplate, Properties, RenderedMessage, ExceptionJson, ScopesJson
+                Category, EventId, EventName, Timestamp, Level, ManagedThreadId, MessageTemplate, Properties, RenderedMessage, ExceptionJson, ScopesJson
             ) VALUES (
-                @Category, @EventId, @EventName, @Timestamp, @Level, @MessageTemplate, @Properties, @RenderedMessage, @ExceptionJson, @ScopesJson
+                @Category, @EventId, @EventName, @Timestamp, @Level, @ManagedThreadId, @MessageTemplate, @Properties, @RenderedMessage, @ExceptionJson, @ScopesJson
             );";
     }
 
@@ -111,6 +111,7 @@ class LogWriter
         cmd.Parameters.AddWithValue("@EventName", entry.EventName ?? (object)DBNull.Value);
         cmd.Parameters.AddWithValue("@Timestamp", entry.Timestamp.ToString("o"));
         cmd.Parameters.AddWithValue("@Level", entry.Level);
+        cmd.Parameters.AddWithValue("@ManagedThreadId", entry.ManagedThreadId);
         cmd.Parameters.AddWithValue("@MessageTemplate", entry.MessageTemplate ?? (object)DBNull.Value);
         cmd.Parameters.AddWithValue("@Properties", entry.SerializeMsgParams() ?? (object)DBNull.Value);
         cmd.Parameters.AddWithValue("@RenderedMessage", entry.RenderedMessage ?? (object)DBNull.Value);
