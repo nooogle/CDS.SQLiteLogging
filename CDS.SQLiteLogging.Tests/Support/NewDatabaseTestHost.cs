@@ -8,6 +8,7 @@ delegate void OnDatabaseClosedDelegate(string dbPath);
 
 class NewDatabaseTestHost
 {
+    public LogPipeline LogPipeline { get; set; }
     public BatchingOptions BatchingOptions { get; set; } = new BatchingOptions();
     public HouseKeepingOptions HouseKeepingOptions { get; set; } = new HouseKeepingOptions();
     public IDateTimeProvider DateTimeProvider { get; set; } = new DefaultDateTimeProvider();
@@ -33,7 +34,8 @@ class NewDatabaseTestHost
             fileName: dbPath,
             batchingOptions: BatchingOptions,
             houseKeepingOptions: HouseKeepingOptions,
-            dateTimeProvider: DateTimeProvider);
+            dateTimeProvider: DateTimeProvider,
+            logPipeline: LogPipeline);
 
         // Get the logger utilities - we want to make these available to the demo classes
         var loggerUtilities = sqliteLoggerProvider.LoggerUtilities;

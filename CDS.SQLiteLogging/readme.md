@@ -15,6 +15,7 @@ This is a first draft of the readme. It needs to be updated with:
 * DB browser tool and SQLite links
 * Any rational for why we are doing this and what the benefits are!
 * Unit tests and the little tick box thing that shows everything is passing!
+* Information about the LogPipeline (see demo in the console app: DIMiddlewareDemo)
 
 
 ## Features

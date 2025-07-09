@@ -130,7 +130,7 @@ public class MELLogger : ILogger
     /// <typeparam name="TState">The type of the state object.</typeparam>
     /// <param name="state">The state object.</param>
     /// <returns>A dictionary of structured parameters if found; otherwise, <c>null</c>.</returns>
-    private IReadOnlyDictionary<string, object>? ExtractStructuredParams<TState>(TState state)
+    private Dictionary<string, object>? ExtractStructuredParams<TState>(TState state)
     {
         if (state is IEnumerable<KeyValuePair<string, object>> kvps)
         {

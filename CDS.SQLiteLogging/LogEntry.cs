@@ -90,10 +90,10 @@ public class LogEntry
     /// <summary>
     /// Gets or sets the message parameters for structured logging.
     /// </summary>
-    public IReadOnlyDictionary<string, object>? Properties
+    public Dictionary<string, object>? Properties
     {
         get => properties;
-        set => properties = value == null ? null : value.ToDictionary(kv => kv.Key, kv => kv.Value);
+        set => properties = value == null ? null : new Dictionary<string, object>(value);
     }
 
     /// <summary>
@@ -139,7 +139,7 @@ public class LogEntry
         int eventId,
         string eventName,
         string messageTemplate,
-        IReadOnlyDictionary<string, object>? properties,
+        Dictionary<string, object>? properties,
         Exception? ex,
         string? scopesJson)
     {
@@ -154,7 +154,7 @@ public class LogEntry
         EventId = eventId;
         EventName = eventName;
         MessageTemplate = messageTemplate;
-        Properties = properties;
+        Properties = properties is Dictionary<string, object> d ? d : (properties != null ? new Dictionary<string, object>(properties) : null);
         ExceptionJson = ExceptionSerializer.ToJson(ex);
         ScopesJson = scopesJson;
 

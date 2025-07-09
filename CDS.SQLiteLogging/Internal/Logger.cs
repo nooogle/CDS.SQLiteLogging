@@ -12,7 +12,7 @@ class Logger : IDisposable, ISQLiteWriterUtilities
     private readonly Housekeeper housekeeper;
     private readonly BatchLogCache logCache;
     private bool disposed;
-
+    private readonly LogPipeline? logPipeline;
 
     /// <summary>
     /// Event that is raised when a log entry is received.
@@ -26,11 +26,14 @@ class Logger : IDisposable, ISQLiteWriterUtilities
     /// <param name="fileName">The name of the SQLite database file.</param>
     /// <param name="batchingOptions">Options for configuring batch processing.</param>
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
+    /// <param name="dateTimeProvider">The date time provider for timestamping log entries.</param>
+    /// <param name="logPipeline">Optional log pipeline for processing entries before writing.</param>
     public Logger(
         string fileName,
         BatchingOptions batchingOptions,
         HouseKeepingOptions houseKeepingOptions,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        LogPipeline? logPipeline)
     {
         // Initialize connection manager
         connectionManager = new ConnectionManager(fileName);
@@ -53,6 +56,9 @@ class Logger : IDisposable, ISQLiteWriterUtilities
             connectionManager,
             houseKeepingOptions,
             dateTimeProvider);
+
+        // Initialize log pipeline
+        this.logPipeline = logPipeline;
     }
 
     /// <summary>
@@ -76,6 +82,13 @@ class Logger : IDisposable, ISQLiteWriterUtilities
             throw new ObjectDisposedException(nameof(Logger));
         }
 
+        // Pass through global pipeline before writing
+        if (logPipeline != null)
+        {
+            logPipeline.ExecuteAsync(entry).GetAwaiter().GetResult();
+        }
+
+        // Add the entry to the cache
         logCache.Add(entry);
         LogEntryReceived?.Invoke(entry);
     }

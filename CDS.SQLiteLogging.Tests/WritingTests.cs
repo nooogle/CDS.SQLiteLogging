@@ -313,4 +313,64 @@ public class WritingTests
                 entries[0].Properties.Should().ContainKey("Username").WhoseValue.Should().Be(username);
             });
     }
+
+  
+    /// <summary>
+    /// Tests that a custom middleware can modify a log entry before it is written, using the pipeline builder and logger provider.
+    /// </summary>
+    [TestMethod]
+    public void Test_CustomMiddleware_ModifiesLogEntry_WithPipelineBuilder()
+    {
+        // Arrange
+        var customKey = "CustomMiddlewareKey";
+        var customValue = "InjectedByMiddleware";
+        var middleware = new TestMiddleware(customKey, customValue);
+        var pipeline = CDS.SQLiteLogging.LogPipelineBuilder.Empty.Add(middleware).Build();
+
+        // Use a custom logger provider to capture the log entry after middleware
+        var host = new NewDatabaseTestHost();
+        host.LogPipeline = pipeline;
+        host.Run(
+            onDatabaseCreated: (serviceProvider, dbPath) =>
+            {
+                var logger = serviceProvider.GetRequiredService<ILogger<WritingTests>>();
+                logger.LogInformation("Test message");
+            },
+            onDatabaseClosed: dbPath => { });
+
+        // Assert
+        middleware.WasInvoked.Should().BeTrue();
+        middleware.ProcessedEntry.Should().NotBeNull();
+        middleware.ProcessedEntry.Properties.Should().ContainKey(customKey).WhoseValue.Should().Be(customValue);
+    }
+
+    /// <summary>
+    /// Middleware for testing: injects a property and tracks invocation.
+    /// </summary>
+    private class TestMiddleware : CDS.SQLiteLogging.ILogMiddleware
+    {
+        private readonly string key;
+        private readonly string value;
+
+        public bool WasInvoked { get; private set; }
+
+
+        public LogEntry ProcessedEntry { get; set; } 
+
+
+        public TestMiddleware(string key, string value)
+        {
+            this.key = key;
+            this.value = value;
+        }
+
+        public Task InvokeAsync(LogEntry entry, Func<Task> next)
+        {
+            WasInvoked = true;
+            entry.Properties ??= new Dictionary<string, object>();
+            entry.Properties[key] = value;
+            ProcessedEntry = entry;
+            return next();
+        }
+    }
 }
