@@ -1,5 +1,5 @@
 using CDS.SQLiteLogging.Tests.Support;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 

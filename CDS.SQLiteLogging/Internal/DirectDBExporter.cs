@@ -115,7 +115,7 @@ internal static class DirectDBExporter
             cmd.Parameters.AddWithValue(paramName, idsToExport[startIndex + i]);
         }
 
-        cmd.CommandText = $"SELECT * FROM {tableName} WHERE DbId IN ({string.Join(",", parameterNames)}) ORDER BY DbId";
+        cmd.CommandText = $"SELECT * FROM {tableName} WHERE {DatabaseSchema.Columns.DbId} IN ({string.Join(",", parameterNames)}) ORDER BY {DatabaseSchema.Columns.DbId}";
         return cmd;
     }
 
@@ -127,10 +127,13 @@ internal static class DirectDBExporter
         string tableName,
         SqliteTransaction transaction)
     {
+        var columns = DatabaseSchema.GetInsertableColumns();
+        var parameters = columns.Select(col => $"@{col}");
+
         string insertSql = $@"INSERT INTO {tableName} 
-            (Category, EventId, EventName, Timestamp, Level, ManagedThreadId, MessageTemplate, Properties, RenderedMessage, ExceptionJson, ScopesJson) 
+            ({string.Join(", ", columns)}) 
             VALUES 
-            (@Category, @EventId, @EventName, @Timestamp, @Level, @ManagedThreadId, @MessageTemplate, @Properties, @RenderedMessage, @ExceptionJson, @ScopesJson)";
+            ({string.Join(", ", parameters)})";
 
         return new SqliteCommand(insertSql, destinationConnectionManager.Connection, transaction);
     }
@@ -145,17 +148,17 @@ internal static class DirectDBExporter
     {
         insertCmd.Parameters.Clear();
         
-        insertCmd.Parameters.AddWithValue("@Category", GetValueOrDBNull(reader, ordinals.Category));
-        insertCmd.Parameters.AddWithValue("@EventId", reader.GetInt32(ordinals.EventId));
-        insertCmd.Parameters.AddWithValue("@EventName", GetValueOrDBNull(reader, ordinals.EventName));
-        insertCmd.Parameters.AddWithValue("@Timestamp", reader.GetString(ordinals.Timestamp));
-        insertCmd.Parameters.AddWithValue("@Level", reader.GetInt32(ordinals.Level));
-        insertCmd.Parameters.AddWithValue("@ManagedThreadId", reader.GetInt32(ordinals.ManagedThreadId));
-        insertCmd.Parameters.AddWithValue("@MessageTemplate", GetValueOrDBNull(reader, ordinals.MessageTemplate));
-        insertCmd.Parameters.AddWithValue("@Properties", GetValueOrDBNull(reader, ordinals.Properties));
-        insertCmd.Parameters.AddWithValue("@RenderedMessage", GetValueOrDBNull(reader, ordinals.RenderedMessage));
-        insertCmd.Parameters.AddWithValue("@ExceptionJson", GetValueOrDBNull(reader, ordinals.ExceptionJson));
-        insertCmd.Parameters.AddWithValue("@ScopesJson", GetValueOrDBNull(reader, ordinals.ScopesJson));
+        insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.Category}", GetValueOrDBNull(reader, ordinals.Category));
+        insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.EventId}", reader.GetInt32(ordinals.EventId));
+        insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.EventName}", GetValueOrDBNull(reader, ordinals.EventName));
+        insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.Timestamp}", reader.GetString(ordinals.Timestamp));
+        insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.Level}", reader.GetInt32(ordinals.Level));
+        insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.ManagedThreadId}", reader.GetInt32(ordinals.ManagedThreadId));
+        insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.MessageTemplate}", GetValueOrDBNull(reader, ordinals.MessageTemplate));
+        insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.Properties}", GetValueOrDBNull(reader, ordinals.Properties));
+        insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.RenderedMessage}", GetValueOrDBNull(reader, ordinals.RenderedMessage));
+        insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.ExceptionJson}", GetValueOrDBNull(reader, ordinals.ExceptionJson));
+        insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.ScopesJson}", GetValueOrDBNull(reader, ordinals.ScopesJson));
     }
 
     /// <summary>
@@ -185,17 +188,17 @@ internal static class DirectDBExporter
 
         public ColumnOrdinals(SqliteDataReader reader)
         {
-            Category = reader.GetOrdinal(nameof(LogEntry.Category));
-            EventId = reader.GetOrdinal(nameof(LogEntry.EventId));
-            EventName = reader.GetOrdinal(nameof(LogEntry.EventName));
-            Timestamp = reader.GetOrdinal(nameof(LogEntry.Timestamp));
-            Level = reader.GetOrdinal(nameof(LogEntry.Level));
-            ManagedThreadId = reader.GetOrdinal(nameof(LogEntry.ManagedThreadId));
-            MessageTemplate = reader.GetOrdinal(nameof(LogEntry.MessageTemplate));
-            Properties = reader.GetOrdinal(nameof(LogEntry.Properties));
-            RenderedMessage = reader.GetOrdinal(nameof(LogEntry.RenderedMessage));
-            ExceptionJson = reader.GetOrdinal(nameof(LogEntry.ExceptionJson));
-            ScopesJson = reader.GetOrdinal(nameof(LogEntry.ScopesJson));
+            Category = reader.GetOrdinal(DatabaseSchema.Columns.Category);
+            EventId = reader.GetOrdinal(DatabaseSchema.Columns.EventId);
+            EventName = reader.GetOrdinal(DatabaseSchema.Columns.EventName);
+            Timestamp = reader.GetOrdinal(DatabaseSchema.Columns.Timestamp);
+            Level = reader.GetOrdinal(DatabaseSchema.Columns.Level);
+            ManagedThreadId = reader.GetOrdinal(DatabaseSchema.Columns.ManagedThreadId);
+            MessageTemplate = reader.GetOrdinal(DatabaseSchema.Columns.MessageTemplate);
+            Properties = reader.GetOrdinal(DatabaseSchema.Columns.Properties);
+            RenderedMessage = reader.GetOrdinal(DatabaseSchema.Columns.RenderedMessage);
+            ExceptionJson = reader.GetOrdinal(DatabaseSchema.Columns.ExceptionJson);
+            ScopesJson = reader.GetOrdinal(DatabaseSchema.Columns.ScopesJson);
         }
     }
 }

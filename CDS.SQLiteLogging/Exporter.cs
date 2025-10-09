@@ -32,7 +32,7 @@ public static class Exporter
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(dbFileNameDestination));
         }
 
-        if (idsToExport == null)
+        if (idsToExport == null || idsToExport.Length == 0)
         {
             throw new ArgumentException("Value cannot be null or empty.", nameof(idsToExport));
         }
@@ -45,5 +45,20 @@ public static class Exporter
             destinationConnectionManager,
             idsToExport,
             cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Exports log entries by ID from a source database to a destination database (synchronous wrapper).
+    /// </summary>
+    /// <param name="dbFileNameSource">The source database file path.</param>
+    /// <param name="dbFileNameDestination">The destination database file path.</param>
+    /// <param name="idsToExport">The array of log entry IDs to export.</param>
+    /// <exception cref="ArgumentException">Thrown when file paths or IDs are invalid.</exception>
+    public static void Export(
+        string dbFileNameSource,
+        string dbFileNameDestination,
+        long[] idsToExport)
+    {
+        ExportAsync(dbFileNameSource, dbFileNameDestination, idsToExport).GetAwaiter().GetResult();
     }
 }

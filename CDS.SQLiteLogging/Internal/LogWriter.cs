@@ -17,12 +17,15 @@ class LogWriter
     {
         this.connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
 
-        // Predefined SQL INSERT command
+        // Build INSERT command using schema constants
+        var columns = DatabaseSchema.GetInsertableColumns();
+        var parameters = columns.Select(col => $"@{col}");
+
         sqlInsert = $@"
             INSERT INTO {tableName} (
-                Category, EventId, EventName, Timestamp, Level, ManagedThreadId, MessageTemplate, Properties, RenderedMessage, ExceptionJson, ScopesJson
+                {string.Join(", ", columns)}
             ) VALUES (
-                @Category, @EventId, @EventName, @Timestamp, @Level, @ManagedThreadId, @MessageTemplate, @Properties, @RenderedMessage, @ExceptionJson, @ScopesJson
+                {string.Join(", ", parameters)}
             );";
     }
 
@@ -98,7 +101,6 @@ class LogWriter
         });
     }
 
-
     /// <summary>
     /// Adds parameters to the SQLite command based on the log entry properties.
     /// </summary>
@@ -106,16 +108,16 @@ class LogWriter
     /// <param name="entry">The log entry.</param>
     private void AddParametersToCommand(SqliteCommand cmd, LogEntry entry)
     {
-        cmd.Parameters.AddWithValue("@Category", entry.Category ?? (object)DBNull.Value);
-        cmd.Parameters.AddWithValue("@EventId", entry.EventId);
-        cmd.Parameters.AddWithValue("@EventName", entry.EventName ?? (object)DBNull.Value);
-        cmd.Parameters.AddWithValue("@Timestamp", entry.Timestamp.ToString("o"));
-        cmd.Parameters.AddWithValue("@Level", entry.Level);
-        cmd.Parameters.AddWithValue("@ManagedThreadId", entry.ManagedThreadId);
-        cmd.Parameters.AddWithValue("@MessageTemplate", entry.MessageTemplate ?? (object)DBNull.Value);
-        cmd.Parameters.AddWithValue("@Properties", entry.SerializeMsgParams() ?? (object)DBNull.Value);
-        cmd.Parameters.AddWithValue("@RenderedMessage", entry.RenderedMessage ?? (object)DBNull.Value);
-        cmd.Parameters.AddWithValue("@ExceptionJson", entry.ExceptionJson ?? (object)DBNull.Value);
-        cmd.Parameters.AddWithValue("@ScopesJson", entry.ScopesJson ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.Category}", entry.Category ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.EventId}", entry.EventId);
+        cmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.EventName}", entry.EventName ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.Timestamp}", entry.Timestamp.ToString("o"));
+        cmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.Level}", entry.Level);
+        cmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.ManagedThreadId}", entry.ManagedThreadId);
+        cmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.MessageTemplate}", entry.MessageTemplate ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.Properties}", entry.SerializeMsgParams() ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.RenderedMessage}", entry.RenderedMessage ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.ExceptionJson}", entry.ExceptionJson ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.ScopesJson}", entry.ScopesJson ?? (object)DBNull.Value);
     }
 }

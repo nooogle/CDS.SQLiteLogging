@@ -129,7 +129,7 @@ public class Housekeeper : IDisposable
         {
             // First, always delete records older than cutoff date
             string formattedDate = cutoffDate.ToString("o"); // ISO 8601 format
-            string sql = $"DELETE FROM {TableCreator.TableName} WHERE Timestamp < @cutoffDate";
+            string sql = $"DELETE FROM {DatabaseSchema.Tables.LogEntry} WHERE {DatabaseSchema.Columns.Timestamp} < @cutoffDate";
 
             using (var cmd = new SqliteCommand(sql, connectionManager.Connection, transaction))
             {
@@ -158,7 +158,7 @@ public class Housekeeper : IDisposable
 
         connectionManager.ExecuteInTransaction(transaction =>
         {
-            string sql = $"DELETE FROM {TableCreator.TableName}";
+            string sql = $"DELETE FROM {DatabaseSchema.Tables.LogEntry}";
 
             using var cmd = new SqliteCommand(sql, connectionManager.Connection, transaction);
             deletedCount = cmd.ExecuteNonQuery();
@@ -236,7 +236,7 @@ public class Housekeeper : IDisposable
                     cmd.Parameters.AddWithValue(paramName, batch[j]);
                 }
 
-                cmd.CommandText = $"DELETE FROM {TableCreator.TableName} WHERE DbId IN ({string.Join(",", parameterNames)})";
+                cmd.CommandText = $"DELETE FROM {DatabaseSchema.Tables.LogEntry} WHERE {DatabaseSchema.Columns.DbId} IN ({string.Join(",", parameterNames)})";
                 await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
             }).ConfigureAwait(false);
         }

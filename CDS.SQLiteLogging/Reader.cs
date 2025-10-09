@@ -15,7 +15,7 @@ public class Reader : IDisposable
     /// <summary>
     /// Gets the name of the table to read from.
     /// </summary>
-    public static string TableName => Internal.TableCreator.TableName;
+    public static string TableName => Internal.DatabaseSchema.Tables.LogEntry;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Reader"/> class.
@@ -30,7 +30,7 @@ public class Reader : IDisposable
         }
 
         connectionManager = new ConnectionManager(dbPath);
-        tableName = Internal.TableCreator.TableName;
+        tableName = Internal.DatabaseSchema.Tables.LogEntry;
     }
 
     /// <summary>
@@ -51,7 +51,7 @@ public class Reader : IDisposable
 
         await connectionManager.ExecuteWithRetryAsync(async () =>
         {
-            string sql = $"SELECT * FROM {tableName} ORDER BY Timestamp DESC;";
+            string sql = $"SELECT * FROM {tableName} ORDER BY {Internal.DatabaseSchema.Columns.DbId} DESC;";
             using var cmd = new SqliteCommand(sql, connectionManager.Connection);
             using var reader = await Task.Run(() => cmd.ExecuteReader()).ConfigureAwait(false);
             while (await Task.Run(() => reader.Read()).ConfigureAwait(false))
@@ -90,7 +90,7 @@ public class Reader : IDisposable
 
         await connectionManager.ExecuteWithRetryAsync(async () =>
         {
-            string sql = $"SELECT * FROM {tableName} ORDER BY Timestamp DESC LIMIT @maxCount;";
+            string sql = $"SELECT * FROM {tableName} ORDER BY {Internal.DatabaseSchema.Columns.DbId} DESC LIMIT @maxCount;";
             using var cmd = new SqliteCommand(sql, connectionManager.Connection);
             cmd.Parameters.AddWithValue("@maxCount", maxCount);
             using var reader = await Task.Run(() => cmd.ExecuteReader()).ConfigureAwait(false);
@@ -136,7 +136,7 @@ public class Reader : IDisposable
 
         await connectionManager.ExecuteWithRetryAsync(async () =>
         {
-            string sql = $"SELECT * FROM {tableName} WHERE json_extract(Properties, '$.{key}') = @value;";
+            string sql = $"SELECT * FROM {tableName} WHERE json_extract({Internal.DatabaseSchema.Columns.Properties}, '$.{{key}}') = @value;";
             using var cmd = new SqliteCommand(sql, connectionManager.Connection);
             cmd.Parameters.AddWithValue("@value", value);
             using var reader = await Task.Run(() => cmd.ExecuteReader()).ConfigureAwait(false);
@@ -192,20 +192,20 @@ public class Reader : IDisposable
     {
         var entry = new LogEntry
         {
-            DbId = reader.GetInt64(reader.GetOrdinal(nameof(LogEntry.DbId))),
-            Category = reader.GetString(reader.GetOrdinal(nameof(LogEntry.Category))),
-            EventId = reader.GetInt32(reader.GetOrdinal(nameof(LogEntry.EventId))),
-            EventName = reader.GetString(reader.GetOrdinal(nameof(LogEntry.EventName))),
-            Timestamp = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal(nameof(LogEntry.Timestamp)))),
-            Level = (LogLevel)reader.GetInt32(reader.GetOrdinal(nameof(LogEntry.Level))),
-            ManagedThreadId = reader.GetInt32(reader.GetOrdinal(nameof(LogEntry.ManagedThreadId))),
-            MessageTemplate = reader.GetString(reader.GetOrdinal(nameof(LogEntry.MessageTemplate))),
-            RenderedMessage = reader.GetString(reader.GetOrdinal(nameof(LogEntry.RenderedMessage))),
-            ExceptionJson = reader.GetString(reader.GetOrdinal(nameof(LogEntry.ExceptionJson))),
-            ScopesJson = reader.IsDBNull(reader.GetOrdinal(nameof(LogEntry.ScopesJson))) ? null : reader.GetString(reader.GetOrdinal(nameof(LogEntry.ScopesJson)))
+            DbId = reader.GetInt64(reader.GetOrdinal(Internal.DatabaseSchema.Columns.DbId)),
+            Category = reader.GetString(reader.GetOrdinal(Internal.DatabaseSchema.Columns.Category)),
+            EventId = reader.GetInt32(reader.GetOrdinal(Internal.DatabaseSchema.Columns.EventId)),
+            EventName = reader.GetString(reader.GetOrdinal(Internal.DatabaseSchema.Columns.EventName)),
+            Timestamp = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal(Internal.DatabaseSchema.Columns.Timestamp))),
+            Level = (LogLevel)reader.GetInt32(reader.GetOrdinal(Internal.DatabaseSchema.Columns.Level)),
+            ManagedThreadId = reader.GetInt32(reader.GetOrdinal(Internal.DatabaseSchema.Columns.ManagedThreadId)),
+            MessageTemplate = reader.GetString(reader.GetOrdinal(Internal.DatabaseSchema.Columns.MessageTemplate)),
+            RenderedMessage = reader.GetString(reader.GetOrdinal(Internal.DatabaseSchema.Columns.RenderedMessage)),
+            ExceptionJson = reader.GetString(reader.GetOrdinal(Internal.DatabaseSchema.Columns.ExceptionJson)),
+            ScopesJson = reader.IsDBNull(reader.GetOrdinal(Internal.DatabaseSchema.Columns.ScopesJson)) ? null : reader.GetString(reader.GetOrdinal(Internal.DatabaseSchema.Columns.ScopesJson))
         };
 
-        entry.DeserializeMsgParams(reader.GetString(reader.GetOrdinal(nameof(LogEntry.Properties))));
+        entry.DeserializeMsgParams(reader.GetString(reader.GetOrdinal(Internal.DatabaseSchema.Columns.Properties)));
 
         return entry;
     }

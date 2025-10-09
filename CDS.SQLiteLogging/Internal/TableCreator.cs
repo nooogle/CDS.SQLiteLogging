@@ -7,12 +7,10 @@ class TableCreator
 {
     private readonly ConnectionManager connectionManager;
 
-
     /// <summary>
     /// Gets the name of the <see cref="LogEntry"/> table.
     /// </summary>
-    public static string TableName => nameof(LogEntry);
-
+    public static string TableName => DatabaseSchema.Tables.LogEntry;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TableCreator"/> class.
@@ -29,22 +27,7 @@ class TableCreator
     /// <returns>The name of the created table.</returns>
     public string CreateTableForLogEntry()
     {
-        var columnDefinitions = new List<string>
-        {
-            "DbId INTEGER PRIMARY KEY AUTOINCREMENT",
-            "Category TEXT",
-            "EventId INTEGER",
-            "EventName TEXT",
-            "Timestamp TEXT",
-            "Level INTEGER",
-            "ManagedThreadId INTEGER",
-            "MessageTemplate TEXT",
-            "Properties TEXT",
-            "RenderedMessage TEXT",
-            "ExceptionJson TEXT",
-            "ScopesJson TEXT"
-        };
-
+        var columnDefinitions = DatabaseSchema.GetColumnDefinitions();
         string sql = $"CREATE TABLE IF NOT EXISTS {TableName} ({string.Join(", ", columnDefinitions)});";
         connectionManager.ExecuteNonQuery(sql);
 
