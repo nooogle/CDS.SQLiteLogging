@@ -27,6 +27,7 @@ class Program
                 .AddItem("Writer demos (non DI)", new NonDIWriterDemos.Menu().Run)
                 .AddItem("Reader demos", ReaderDemos.Menu.Run)
                 .AddItem("Housekeeping demos", HousekeeperDemos.Menu.Run)
+                .AddItem("Export demo", ExportDemo.DemoRunner.Run)
                 .Build()
                 .Run();
         }

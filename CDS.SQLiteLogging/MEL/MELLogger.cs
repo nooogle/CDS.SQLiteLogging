@@ -83,7 +83,7 @@ public class MELLogger : ILogger
             return;
         }
 
-        // Gather scope information if present
+        // Gather scope information if present  
         string? scopesJson = GetScopesJson();
 
         var messageTemplate = ExtractTemplate(state);
