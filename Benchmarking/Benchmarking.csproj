@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net8.0;net48</TargetFrameworks>
+    <TargetFrameworks>net10.0;net8.0;net48</TargetFrameworks>
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
-    <!-- ImplicitUsings only enabled for .NET 8 -->
-    <ImplicitUsings Condition="'$(TargetFramework)' == 'net8.0'">enable</ImplicitUsings>
+    <!-- ImplicitUsings only enabled for .NET 8 and .NET 10 -->
+    <ImplicitUsings Condition="'$(TargetFramework)' == 'net10.0' OR '$(TargetFramework)' == 'net8.0'">enable</ImplicitUsings>
     <ImplicitUsings Condition="'$(TargetFramework)' == 'net48'">disable</ImplicitUsings>
 
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -16,12 +16,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
-    <PackageReference Include="System.Reflection.Metadata" Version="9.0.3" />
-    <PackageReference Include="System.Collections.Immutable" Version="9.0.3" />
+    <PackageReference Include="System.Reflection.Metadata" Version="10.0.2" />
+    <PackageReference Include="System.Collections.Immutable" Version="10.0.2" />
   </ItemGroup>
   
   <ItemGroup>

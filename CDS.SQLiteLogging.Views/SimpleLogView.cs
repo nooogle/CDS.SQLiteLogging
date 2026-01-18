@@ -15,6 +15,8 @@ public partial class SimpleLogView : UserControl
     /// <summary>
     /// Gets or sets the maximum queue size for log entries.
     /// </summary>
+    [Browsable(true)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
     public int MaxQueueSize
     {
         get => logEntryUICache.MaxQueueSize;

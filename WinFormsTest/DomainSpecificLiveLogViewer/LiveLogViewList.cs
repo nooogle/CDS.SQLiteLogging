@@ -1,5 +1,6 @@
 ﻿using CDS.SQLiteLogging;
 using Microsoft.Extensions.Logging;
+using System.ComponentModel;
 
 namespace WinFormsTest.DomainSpecificLiveLogViewer;
 
@@ -13,6 +14,11 @@ public partial class LiveLogViewList : UserControl
     /// <summary>
     /// Gets or sets the maximum queue size for log entries.
     /// </summary>
+    /// <remarks>
+    /// This property is not intended to be serialized by designer or code generation tools.
+    /// </remarks>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public int MaxQueueSize
     {
         get => logEntryUICache.MaxQueueSize;
@@ -22,6 +28,8 @@ public partial class LiveLogViewList : UserControl
     /// <summary>
     /// Gets or sets the filter function for log entries.
     /// </summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public Func<LogEntry, bool>? Filter
     {
         get => logEntryUICache.Filter;

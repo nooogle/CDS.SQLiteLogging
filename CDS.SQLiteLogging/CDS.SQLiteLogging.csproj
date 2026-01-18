@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net48</TargetFrameworks>
+    <TargetFrameworks>net10.0;net8.0;net48</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
@@ -36,11 +36,11 @@
 
   <!-- Common packages for all target frameworks -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.3" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.3" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.3" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="System.Collections.Immutable" Version="9.0.3" />
+    <PackageReference Include="System.Collections.Immutable" Version="10.0.2" />
   </ItemGroup>
 
   <!-- Packages specific to .NET Framework 4.8 -->
@@ -48,13 +48,13 @@
     <PackageReference Include="System.Data.SQLite" Version="1.0.119" />
   </ItemGroup>
 
-  <!-- Packages specific to .NET 8.0 -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+  <!-- Packages specific to .NET 8.0 and .NET 10.0 -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0' OR '$(TargetFramework)' == 'net10.0'">
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.3" />
   </ItemGroup>
 
-  <!-- Aliases for .NET 8.0 -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+  <!-- Aliases for .NET 8.0 and .NET 10.0 -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0' OR '$(TargetFramework)' == 'net10.0'">
     <Using Include="Microsoft.Data.Sqlite.SqliteCommand">
       <Alias>SqliteCommand</Alias>
     </Using>
@@ -76,7 +76,7 @@
   </ItemGroup>
 
   <!-- Aliases for other target frameworks -->
-  <ItemGroup Condition="'$(TargetFramework)' != 'net8.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <Using Include="System.Data.SQLite.SQLiteCommand">
       <Alias>SqliteCommand</Alias>
     </Using>

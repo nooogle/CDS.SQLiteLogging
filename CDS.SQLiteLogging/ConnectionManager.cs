@@ -235,9 +235,17 @@ class ConnectionManager : IDisposable
         {
             if (disposing && connection != null)
             {
-                connection.Close();
-                connection.Dispose();
-                semaphore.Dispose();
+                // Wait for any pending operations to complete before disposing
+                semaphore.Wait();
+                try
+                {
+                    connection.Close();
+                    connection.Dispose();
+                }
+                finally
+                {
+                    semaphore.Dispose();
+                }
             }
 
             disposed = true;

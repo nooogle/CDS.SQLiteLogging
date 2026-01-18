@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
@@ -19,10 +19,10 @@
 
   <ItemGroup>
     <PackageReference Include="AwesomeAssertions" Version="9.2.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
-    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="17.14.2" />
-    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" Version="1.6.3" />
-    <PackageReference Include="MSTest" Version="3.8.3" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.3.2" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" Version="2.0.2" />
+    <PackageReference Include="MSTest" Version="4.0.2" />
   </ItemGroup>
 
   <ItemGroup>
