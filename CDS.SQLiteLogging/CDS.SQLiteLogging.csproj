@@ -15,7 +15,7 @@
     <PackageProjectUrl>https://github.com/nooogle/CDS.SQLiteLogging</PackageProjectUrl>
     <RepositoryUrl>https://github.com/nooogle/CDS.SQLiteLogging</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <Platforms>AnyCPU;x64;ARM64</Platforms>
+    <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
