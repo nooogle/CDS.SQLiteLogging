@@ -22,7 +22,7 @@ jobs:
     # windows-latest already has the .NET Framework 4.8 targeting pack.
     # Install .NET 8 and .NET 10 SDKs explicitly so both TFMs build correctly.
     - name: Setup .NET SDKs
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: |
           8.0.x
