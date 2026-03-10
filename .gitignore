@@ -50,6 +50,10 @@ Generated\ Files/
 TestResult.xml
 nunit-*.xml
 
+# Test results
+test-results/
+TestResults/
+
 # Build Results of an ATL Project
 [Dd]ebugPS/
 [Rr]eleasePS/
