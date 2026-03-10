@@ -154,7 +154,7 @@ public class LogEntry
         EventId = eventId;
         EventName = eventName;
         MessageTemplate = messageTemplate;
-        Properties = properties is Dictionary<string, object> d ? d : (properties != null ? new Dictionary<string, object>(properties) : null);
+        Properties = SafeCopyProperties(properties);
         ExceptionJson = ExceptionSerializer.ToJson(ex);
         ScopesJson = scopesJson;
 
@@ -210,5 +210,36 @@ public class LogEntry
         result ??= [];
 
         return result;
+    }
+
+    /// <summary>
+    /// Creates a safe copy of the properties dictionary, tolerating concurrent modification
+    /// by retrying on <see cref="InvalidOperationException"/>.
+    /// </summary>
+    /// <param name="source">The source dictionary to copy.</param>
+    /// <returns>A new dictionary containing the copied entries, or <c>null</c> if the source is <c>null</c>.</returns>
+    private static Dictionary<string, object>? SafeCopyProperties(Dictionary<string, object>? source)
+    {
+        if (source is null)
+        {
+            return null;
+        }
+
+        const int maxRetries = 3;
+
+        for (int attempt = 0; attempt < maxRetries; attempt++)
+        {
+            try
+            {
+                return new Dictionary<string, object>(source);
+            }
+            catch (InvalidOperationException) when (attempt < maxRetries - 1)
+            {
+                // Collection was modified during copy; retry
+            }
+        }
+
+        // Final fallback: return an empty dictionary rather than throwing
+        return [];
     }
 }

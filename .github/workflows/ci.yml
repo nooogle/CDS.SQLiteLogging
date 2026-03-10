@@ -2,8 +2,11 @@ name: Build, Test & Pack
 
 on:
   push:
+    branches: [ master ]
     tags:
-      - 'v*' # Trigger on version tags like v1.0, v2.3.4
+      - 'v*'           # e.g. v2.5.0 — triggers pack + NuGet publish
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build_test_pack:
@@ -13,50 +16,80 @@ jobs:
     - name: Checkout code (full history + tags)
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0
+        fetch-depth: 0   # required by MinVer to walk the tag history
         fetch-tags: true
 
-    - name: Setup .NET 8
+    # windows-latest already has the .NET Framework 4.8 targeting pack.
+    # Install .NET 8 and .NET 10 SDKs explicitly so both TFMs build correctly.
+    - name: Setup .NET SDKs
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
-
-    # Add .NET Framework 4.8 setup
-    - name: Setup .NET Framework 4.8 Developer Pack
-      run: |
-        choco install netfx-4.8-devpack -y
+        dotnet-version: |
+          8.0.x
+          10.0.x
 
     - name: Cache NuGet packages
       uses: actions/cache@v4
       with:
         path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.sln') }}-${{ hashFiles('**/*.csproj') }}
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
         restore-keys: |
-          ${{ runner.os }}-nuget-${{ hashFiles('**/*.sln') }}-
           ${{ runner.os }}-nuget-
 
     - name: Restore dependencies
-      run: dotnet restore --verbosity normal
+      run: dotnet restore
 
     - name: Build solution
       run: dotnet build --no-restore --configuration Release
 
     - name: Run unit tests
-      run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=test-results.trx" --results-directory ./test-results
+      run: >
+        dotnet test
+        --no-build
+        --configuration Release
+        --logger "trx;LogFileName=test-results.trx"
+        --results-directory ./test-results
 
-    - name: Pack projects (only on tag pushes)
+    - name: Publish test results
+      uses: dorny/test-reporter@v2
+      if: always()   # show results even when tests fail
+      with:
+        name: Unit Tests
+        path: '**/test-results/**/*.trx'
+        reporter: dotnet-trx
+        fail-on-error: true
+
+    - name: Upload test results artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: '**/test-results/**/*.trx'
+
+    # ── Release steps (tag pushes only) ──────────────────────────────────────
+
+    - name: Pack NuGet packages
       if: startsWith(github.ref, 'refs/tags/v')
       run: dotnet pack --no-build --configuration Release --output ./artifacts/packages
 
-    - name: Upload Test Results
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-${{ runner.os }}
-        path: '**/test-results/**/*.trx'
-
-    - name: Upload NuGet Packages (only on tag pushes)
+    - name: Upload NuGet packages artifact
       if: startsWith(github.ref, 'refs/tags/v')
       uses: actions/upload-artifact@v4
       with:
         name: nuget-packages
         path: ./artifacts/packages/**/*.nupkg
+
+    - name: Publish to NuGet.org
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: >
+        dotnet nuget push ./artifacts/packages/**/*.nupkg
+        --api-key ${{ secrets.NUGET_API_KEY }}
+        --source https://api.nuget.org/v3/index.json
+        --skip-duplicate
+
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ./artifacts/packages/**/*.nupkg
+        generate_release_notes: true

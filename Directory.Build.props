@@ -3,15 +3,16 @@
     <Authors>Jon Shadforth</Authors>
     <Company>Carpe Diem Systems</Company>
     <Copyright>Copyright (c) 2025 Carpe Diem Systems</Copyright>
+    <!-- MinVer reads the version from the nearest Git tag (e.g. v2.5.0).
+         If no tag is found it falls back to MinVerMinimumMajorMinor. -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerMinimumMajorMinor>2.5</MinVerMinimumMajorMinor>
   </PropertyGroup>
 
   <ItemGroup>
-
-    <PackageReference Include="Nerdbank.GitVersioning" Version="3.9.50" PrivateAssets="all">
-      <PrivateAssets>all</PrivateAssets>
+    <PackageReference Include="MinVer" Version="7.0.0" PrivateAssets="all">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-
   </ItemGroup>
 
 </Project>

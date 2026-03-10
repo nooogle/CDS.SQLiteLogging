@@ -86,7 +86,12 @@ public class MELLogger : ILogger
         // Gather scope information if present  
         string? scopesJson = GetScopesJson();
 
-        var messageTemplate = ExtractTemplate(state);
+        // Snapshot the state to avoid concurrent-modification if another thread logs simultaneously
+        KeyValuePair<string, object>[]? stateSnapshot = state is IEnumerable<KeyValuePair<string, object>> kvps
+            ? kvps.ToArray()
+            : null;
+
+        var messageTemplate = ExtractTemplate(stateSnapshot);
         var formattedMessage = formatter(state, exception);
 
         var logEntry = new LogEntry(
@@ -96,7 +101,7 @@ public class MELLogger : ILogger
             eventId: eventId.Id,
             eventName: eventId.Name ?? string.Empty,
             messageTemplate: messageTemplate ?? formattedMessage,
-            properties: ExtractStructuredParams(state),
+            properties: ExtractStructuredParams(stateSnapshot),
             ex: exception,
             scopesJson: scopesJson);
 
@@ -104,44 +109,45 @@ public class MELLogger : ILogger
     }
 
     /// <summary>
-    /// Extracts the original message template from the state if available.
+    /// Extracts the original message template from a state snapshot.
     /// </summary>
-    /// <typeparam name="TState">The type of the state object.</typeparam>
-    /// <param name="state">The state object.</param>
+    /// <param name="snapshot">The snapshotted state key-value pairs.</param>
     /// <returns>The original message template if found; otherwise, <c>null</c>.</returns>
-    private string? ExtractTemplate<TState>(TState state)
+    private static string? ExtractTemplate(KeyValuePair<string, object>[]? snapshot)
     {
-        if (state is IEnumerable<KeyValuePair<string, object>> kvps)
+        if (snapshot is null)
         {
-            foreach (var kv in kvps)
+            return null;
+        }
+
+        foreach (var kv in snapshot)
+        {
+            if (kv.Key == "{OriginalFormat}" && kv.Value != null)
             {
-                if (kv.Key == "{OriginalFormat}" && kv.Value != null)
-                {
-                    return kv.Value.ToString();
-                }
+                return kv.Value.ToString();
             }
         }
+
         return null;
     }
 
     /// <summary>
-    /// Extracts structured parameters from the state if available.
+    /// Extracts structured parameters from a state snapshot.
     /// </summary>
-    /// <typeparam name="TState">The type of the state object.</typeparam>
-    /// <param name="state">The state object.</param>
+    /// <param name="snapshot">The snapshotted state key-value pairs.</param>
     /// <returns>A dictionary of structured parameters if found; otherwise, <c>null</c>.</returns>
-    private Dictionary<string, object>? ExtractStructuredParams<TState>(TState state)
+    private static Dictionary<string, object>? ExtractStructuredParams(KeyValuePair<string, object>[]? snapshot)
     {
-        if (state is IEnumerable<KeyValuePair<string, object>> kvps)
+        if (snapshot is null)
         {
-            var dict = kvps
-                .Where(kv => kv.Key != "{OriginalFormat}" && kv.Value != null)
-                .ToDictionary(kv => kv.Key, kv => kv.Value);
-
-            return dict.Count > 0 ? dict : null;
+            return null;
         }
 
-        return null;
+        var dict = snapshot
+            .Where(kv => kv.Key != "{OriginalFormat}" && kv.Value != null)
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
+
+        return dict.Count > 0 ? dict : null;
     }
 
     /// <summary>

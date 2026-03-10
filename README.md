@@ -1,9 +1,10 @@
 # CDS.SQLiteLogging
 
-
-![CI](https://github.com/nooogle/CDS.SQLiteLogging/actions/workflows/ci.yml/badge.svg)
-
-![CI](https://github.com/nooogle/CDS.SQLiteLogging/actions/workflows/ci.yml/badge.svg?branch=master)
+[![CI](https://github.com/nooogle/CDS.SQLiteLogging/actions/workflows/ci.yml/badge.svg)](https://github.com/nooogle/CDS.SQLiteLogging/actions/workflows/ci.yml)
+[![NuGet Version](https://img.shields.io/nuget/v/CDS.SQLiteLogging)](https://www.nuget.org/packages/CDS.SQLiteLogging)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/CDS.SQLiteLogging)](https://www.nuget.org/packages/CDS.SQLiteLogging)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
+[![.NET](https://img.shields.io/badge/.NET-8%20%7C%2010-512BD4)](https://dotnet.microsoft.com)
 
 
 CDS.SQLiteLogging is a logging library for .NET applications that uses SQLite for storing 
