@@ -102,16 +102,22 @@ MinVer will automatically mark these as pre-release versions in NuGet.
 If the automatic workflow fails, you can manually release:
 
 ```bash
-# Restore, build, and pack
+# Restore, build, and test
 dotnet restore CDS.SQLiteLogging/CDS.SQLiteLogging.csproj
 dotnet restore CDS.SQLiteLogging.Tests/CDS.SQLiteLogging.Tests.csproj
 dotnet build CDS.SQLiteLogging/CDS.SQLiteLogging.csproj --configuration Release
 dotnet test --project CDS.SQLiteLogging.Tests/CDS.SQLiteLogging.Tests.csproj --configuration Release
-dotnet pack CDS.SQLiteLogging/CDS.SQLiteLogging.csproj --configuration Release --no-build --output ./artifacts
 
 # Push to NuGet
-dotnet nuget push ./artifacts/CDS.SQLiteLogging.*.nupkg --api-key YOUR_NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+# The package is created in bin/Release during the build step (GeneratePackageOnBuild is enabled)
+dotnet nuget push CDS.SQLiteLogging/bin/Release/CDS.SQLiteLogging.*.nupkg --api-key YOUR_NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
 ```
+
+> **Note for Windows/PowerShell users:** PowerShell does not expand wildcard patterns for native commands. Use the following instead:
+> ```powershell
+> $pkg = (Get-ChildItem -Path CDS.SQLiteLogging/bin/Release -Filter "CDS.SQLiteLogging.*.nupkg").FullName
+> dotnet nuget push $pkg --api-key YOUR_NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+> ```
 
 ## Rolling Back a Release
 
