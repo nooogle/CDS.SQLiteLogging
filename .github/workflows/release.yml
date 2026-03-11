@@ -62,6 +62,8 @@ jobs:
     
     - name: Push to NuGet.org
       if: startsWith(github.ref, 'refs/tags/')
-      run: dotnet nuget push ./artifacts/${{ env.PACKAGE_ID }}.*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      run: |
+        $pkg = (Get-ChildItem -Path ./artifacts -Filter "${{ env.PACKAGE_ID }}.*.nupkg").FullName
+        dotnet nuget push $pkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
