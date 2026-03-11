@@ -1,0 +1,39 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="LICENSE.txt" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Solution Items/.github/">
+    <File Path=".github/copilot-instructions.md" />
+    <File Path=".github/dependabot.yml" />
+    <File Path=".github/pull_request_template.md" />
+    <File Path=".github/SETUP.md" />
+  </Folder>
+  <Folder Name="/Solution Items/.github/issue template/">
+    <File Path=".github/ISSUE_TEMPLATE/bug_report.yml" />
+    <File Path=".github/ISSUE_TEMPLATE/config.yml" />
+    <File Path=".github/ISSUE_TEMPLATE/feature_request.yml" />
+  </Folder>
+  <Folder Name="/Solution Items/.github/workflows/">
+    <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/codeql.yml" />
+    <File Path=".github/workflows/release.yml" />
+  </Folder>
+  <Project Path="Benchmarking/Benchmarking.csproj">
+    <Build Project="false" />
+  </Project>
+  <Project Path="CDS.SQLiteLogging.Tests/CDS.SQLiteLogging.Tests.csproj">
+    <Build Solution="Release|*" Project="false" />
+  </Project>
+  <Project Path="CDS.SQLiteLogging.Views/CDS.SQLiteLogging.Views.csproj">
+    <Build Solution="Release|*" Project="false" />
+  </Project>
+  <Project Path="CDS.SQLiteLogging/CDS.SQLiteLogging.csproj" />
+  <Project Path="ConsoleTest/ConsoleTest.csproj">
+    <Build Solution="Release|*" Project="false" />
+  </Project>
+  <Project Path="WinFormsTest/WinFormsTest.csproj">
+    <Build Solution="Release|*" Project="false" />
+  </Project>
+</Solution>

@@ -1,6 +1,6 @@
 # GitHub Copilot Coding Guidelines
 
-These concise rules align with current Microsoft/.NET coding conventions for C# (targeting .NET 8).
+These concise rules align with current Microsoft/.NET coding conventions for C# (targeting .NET 8 and 10).
 
 ## 1. Formatting & Style
 - Use Allman braces (opening brace on a new line).

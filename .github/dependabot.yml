@@ -1,25 +1,37 @@
 version: 2
-
 updates:
-  # Keep NuGet packages up to date
-  - package-ecosystem: nuget
-    directory: /
+  # Enable version updates for NuGet
+  - package-ecosystem: "nuget"
+    directory: "/"
     schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 10
-    groups:
-      microsoft-extensions:
-        patterns:
-          - "Microsoft.Extensions.*"
-      microsoft-data:
-        patterns:
-          - "Microsoft.Data.*"
-
-  # Keep GitHub Actions up to date
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-      day: monday
+      interval: "weekly"
+      day: "monday"
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "nuget"
+    reviewers:
+      - "nooogle"
+    assignees:
+      - "nooogle"
+    
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    reviewers:
+      - "nooogle"
+    assignees:
+      - "nooogle"
