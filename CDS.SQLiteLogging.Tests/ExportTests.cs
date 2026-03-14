@@ -510,10 +510,10 @@ public class ExportTests
     }
 
     /// <summary>
-    /// Tests that exporting non-existent IDs doesn't cause errors and results in empty destination.
+    /// Tests that exporting non-existent IDs throws so callers do not mistake an empty export for success.
     /// </summary>
     [TestMethod]
-    public void ExportAsync_WithNonExistentIds_ShouldNotThrowAndCreateEmptyDestination()
+    public void ExportAsync_WithNonExistentIds_ShouldThrowInvalidOperationException()
     {
         // Arrange
         string sourceDbPath = GetTempDbPath();
@@ -526,12 +526,11 @@ public class ExportTests
         try
         {
             // Act
-            Exporter.Export(sourceDbPath, destinationDbPath, nonExistentIds);
+            Action act = () => Exporter.Export(sourceDbPath, destinationDbPath, nonExistentIds);
 
             // Assert
-            using var destReader = new Reader(destinationDbPath);
-            var exportedEntries = destReader.GetAllEntries();
-            exportedEntries.Should().BeEmpty();
+            act.Should().Throw<InvalidOperationException>()
+                .WithMessage("No log entries were exported*");
         }
         finally
         {

@@ -14,10 +14,10 @@ internal static class DirectDBExporter
     /// <param name="destinationConnectionManager">The destination database connection manager.</param>
     /// <param name="idsToExport">The array of log entry IDs to export.</param>
     /// <param name="cancellationToken">Cancellation token for long-running operations.</param>
-    /// <returns>A task representing the asynchronous export operation.</returns>
+    /// <returns>A task representing the asynchronous export operation. The completed task result is the number of exported rows.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any connection manager is null.</exception>
     /// <exception cref="ArgumentException">Thrown when the IDs array is null or empty.</exception>
-    public static async Task ExportAsync(
+    public static async Task<int> ExportAsync(
         ConnectionManager sourceConnectionManager,
         ConnectionManager destinationConnectionManager,
         long[] idsToExport,
@@ -40,13 +40,14 @@ internal static class DirectDBExporter
 
         var tableCreator = new TableCreator(destinationConnectionManager);
         string tableName = tableCreator.CreateTableForLogEntry();
+        var exportedRowCount = 0;
 
         for (int i = 0; i < idsToExport.Length; i += BatchSize)
         {
             cancellationToken.ThrowIfCancellationRequested();
             
             int batchLength = Math.Min(BatchSize, idsToExport.Length - i);
-            await ExportBatchAsync(
+            exportedRowCount += await ExportBatchAsync(
                 sourceConnectionManager, 
                 destinationConnectionManager, 
                 tableName, 
@@ -55,12 +56,14 @@ internal static class DirectDBExporter
                 batchLength,
                 cancellationToken).ConfigureAwait(false);
         }
+
+        return exportedRowCount;
     }
 
     /// <summary>
     /// Exports a batch of log entries.
     /// </summary>
-    private static async Task ExportBatchAsync(
+    private static async Task<int> ExportBatchAsync(
         ConnectionManager sourceConnectionManager,
         ConnectionManager destinationConnectionManager,
         string tableName,
@@ -69,6 +72,8 @@ internal static class DirectDBExporter
         int batchLength,
         CancellationToken cancellationToken)
     {
+        var exportedRowCount = 0;
+
         await destinationConnectionManager.ExecuteInTransactionAsync(async transaction =>
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -91,8 +96,11 @@ internal static class DirectDBExporter
                 cancellationToken.ThrowIfCancellationRequested();
                 PopulateInsertCommand(insertCmd, reader, columnOrdinals);
                 await Task.Run(() => insertCmd.ExecuteNonQuery(), cancellationToken).ConfigureAwait(false);
+                exportedRowCount++;
             }
         }).ConfigureAwait(false);
+
+        return exportedRowCount;
     }
 
     /// <summary>

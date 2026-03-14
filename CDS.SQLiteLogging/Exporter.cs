@@ -16,6 +16,7 @@ public static class Exporter
     /// <param name="cancellationToken">Cancellation token for long-running operations.</param>
     /// <returns>A task representing the asynchronous export operation.</returns>
     /// <exception cref="ArgumentException">Thrown when file paths or IDs are invalid.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when none of the requested IDs exist in the source database.</exception>
     public static async Task ExportAsync(
         string dbFileNameSource,
         string dbFileNameDestination,
@@ -40,11 +41,16 @@ public static class Exporter
         using var sourceConnectionManager = new ConnectionManager(dbFileNameSource);
         using var destinationConnectionManager = new ConnectionManager(dbFileNameDestination);
 
-        await DirectDBExporter.ExportAsync(
+        var exportedRowCount = await DirectDBExporter.ExportAsync(
             sourceConnectionManager,
             destinationConnectionManager,
             idsToExport,
             cancellationToken).ConfigureAwait(false);
+
+        if (exportedRowCount == 0)
+        {
+            throw new InvalidOperationException("No log entries were exported. Ensure that the supplied IDs are persisted DbId values from the source database.");
+        }
     }
 
     /// <summary>
@@ -54,6 +60,7 @@ public static class Exporter
     /// <param name="dbFileNameDestination">The destination database file path.</param>
     /// <param name="idsToExport">The array of log entry IDs to export.</param>
     /// <exception cref="ArgumentException">Thrown when file paths or IDs are invalid.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when none of the requested IDs exist in the source database.</exception>
     public static void Export(
         string dbFileNameSource,
         string dbFileNameDestination,
