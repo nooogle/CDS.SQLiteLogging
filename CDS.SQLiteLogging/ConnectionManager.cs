@@ -55,6 +55,25 @@ class ConnectionManager : IDisposable
     public string DatabasePath => fileName;
 
     /// <summary>
+    /// Executes a non-query SQL command, serialized through the connection semaphore.
+    /// Use this for statements that cannot run inside a transaction, such as <c>VACUUM</c>.
+    /// </summary>
+    /// <param name="sql">The SQL command to execute.</param>
+    public void ExecuteNonQueryGuarded(string sql)
+    {
+        semaphore.Wait();
+        try
+        {
+            using var cmd = new SqliteCommand(sql, connection);
+            cmd.ExecuteNonQuery();
+        }
+        finally
+        {
+            semaphore.Release();
+        }
+    }
+
+    /// <summary>
     /// Executes a non-query SQL command.
     /// </summary>
     /// <param name="sql">The SQL command to execute.</param>

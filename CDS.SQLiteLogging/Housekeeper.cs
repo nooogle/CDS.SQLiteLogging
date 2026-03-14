@@ -136,13 +136,32 @@ public class Housekeeper : IDisposable
                 cmd.Parameters.AddWithValue("@cutoffDate", formattedDate);
                 totalDeletedCount += cmd.ExecuteNonQuery();
             }
+
+            // Then enforce the max-entry count, removing the oldest rows first.
+            // OFFSET @maxEntries positions just past the Nth newest row; if the table
+            // has <= maxEntries rows the subquery returns NULL and nothing is deleted.
+            if (options.MaxEntries > 0)
+            {
+                string countSql = $"""
+                    DELETE FROM {DatabaseSchema.Tables.LogEntry}
+                    WHERE {DatabaseSchema.Columns.DbId} <= (
+                        SELECT {DatabaseSchema.Columns.DbId} FROM {DatabaseSchema.Tables.LogEntry}
+                        ORDER BY {DatabaseSchema.Columns.DbId} DESC
+                        LIMIT 1 OFFSET @maxEntries
+                    )
+                    """;
+
+                using var countCmd = new SqliteCommand(countSql, connectionManager.Connection, transaction);
+                countCmd.Parameters.AddWithValue("@maxEntries", options.MaxEntries);
+                totalDeletedCount += countCmd.ExecuteNonQuery();
+            }
         });
 
-        // If we deleted any records, vacuum the database to reclaim space
+        // Reclaim space; serialized through the semaphore so it doesn't race with
+        // concurrent reads or writes on the same connection.
         if (totalDeletedCount > 0)
         {
-            using var vacuumCmd = new SqliteCommand("VACUUM", connectionManager.Connection);
-            vacuumCmd.ExecuteNonQuery();
+            connectionManager.ExecuteNonQueryGuarded("VACUUM");
         }
 
         return totalDeletedCount;

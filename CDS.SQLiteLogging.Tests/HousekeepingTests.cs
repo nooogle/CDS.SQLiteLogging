@@ -70,6 +70,83 @@ public class HousekeepingTests
     }
 
 
+    /// <summary>
+    /// Tests that MaxEntries pruning retains only the newest N entries when the table exceeds the limit.
+    /// </summary>
+    [TestMethod]
+    public void MaxEntries_WhenTableExceedsLimit_ShouldRetainNewestEntries()
+    {
+        const int totalEntries = 25;
+        const int maxEntries = 10;
+
+        var databaseTestHost = new NewDatabaseTestHost();
+        databaseTestHost.DateTimeProvider = new DefaultDateTimeProvider();
+        databaseTestHost.HouseKeepingOptions.Mode = HousekeepingMode.Manual;
+        databaseTestHost.HouseKeepingOptions.MaxEntries = maxEntries;
+
+        // Push retention period far into the future so time-based delete does not interfere.
+        databaseTestHost.HouseKeepingOptions.RetentionPeriod = TimeSpan.FromDays(365 * 100);
+
+        databaseTestHost.Run(
+            onDatabaseCreated: (serviceProvider, dbPath) =>
+            {
+                var logger = serviceProvider.GetRequiredService<ILogger<WritingTests>>();
+                for (int i = 0; i < totalEntries; i++)
+                {
+                    logger.LogInformation("Log entry {Index}", i);
+                }
+            },
+            onDatabaseClosed: dbPath =>
+            {
+                using var manualHousekeeper = new Housekeeper(dbPath, databaseTestHost.HouseKeepingOptions, new DefaultDateTimeProvider());
+                int deleted = manualHousekeeper.ExecuteHousekeeping();
+
+                deleted.Should().Be(totalEntries - maxEntries);
+
+                using var reader = new Reader(dbPath);
+                var entries = reader.GetAllEntries();
+
+                entries.Should().HaveCount(maxEntries);
+                entries.Should().Contain(e => e.RenderedMessage!.Contains($"{totalEntries - 1}"));
+                entries.Should().NotContain(e => e.RenderedMessage!.Contains($"Log entry {totalEntries - maxEntries - 1}"));
+            });
+    }
+
+    /// <summary>
+    /// Tests that MaxEntries = 0 disables count-based pruning.
+    /// </summary>
+    [TestMethod]
+    public void MaxEntries_WhenSetToZero_ShouldNotPruneAnyEntries()
+    {
+        const int totalEntries = 25;
+
+        var databaseTestHost = new NewDatabaseTestHost();
+        databaseTestHost.DateTimeProvider = new DefaultDateTimeProvider();
+        databaseTestHost.HouseKeepingOptions.Mode = HousekeepingMode.Manual;
+        databaseTestHost.HouseKeepingOptions.MaxEntries = 0;
+        databaseTestHost.HouseKeepingOptions.RetentionPeriod = TimeSpan.FromDays(365 * 100);
+
+        databaseTestHost.Run(
+            onDatabaseCreated: (serviceProvider, dbPath) =>
+            {
+                var logger = serviceProvider.GetRequiredService<ILogger<WritingTests>>();
+                for (int i = 0; i < totalEntries; i++)
+                {
+                    logger.LogInformation("Log entry {Index}", i);
+                }
+            },
+            onDatabaseClosed: dbPath =>
+            {
+                using var manualHousekeeper = new Housekeeper(dbPath, databaseTestHost.HouseKeepingOptions, new DefaultDateTimeProvider());
+                int deleted = manualHousekeeper.ExecuteHousekeeping();
+
+                deleted.Should().Be(0);
+
+                using var reader = new Reader(dbPath);
+                reader.GetAllEntries().Should().HaveCount(totalEntries);
+            });
+    }
+
     [TestMethod]
     public void DeleteByIds_ShouldOnlyDelete_BySelectedIds()
     {

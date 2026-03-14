@@ -71,4 +71,11 @@ public interface ISQLiteWriterUtilities
     /// Resets the count of discarded log entries.
     /// </summary>
     void ResetDiscardedEntriesCount();
+
+    /// <summary>
+    /// Executes a housekeeping cycle immediately, deleting entries that exceed the
+    /// retention period or the maximum entry count.
+    /// </summary>
+    /// <returns>The total number of entries deleted.</returns>
+    int ExecuteHousekeeping();
 }

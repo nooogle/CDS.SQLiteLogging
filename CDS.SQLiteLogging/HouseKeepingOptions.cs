@@ -19,4 +19,11 @@ public class HouseKeepingOptions
     /// Gets or sets the interval between cleanup operations.
     /// </summary>
     public TimeSpan CleanupInterval { get; set; } = TimeSpan.FromHours(1);
+
+    /// <summary>
+    /// Gets or sets the maximum number of log entries to retain.
+    /// When the table exceeds this count, the oldest entries (lowest <c>DbId</c>) are
+    /// pruned first. Set to 0 to disable count-based pruning.
+    /// </summary>
+    public long MaxEntries { get; set; } = 1_000_000;
 }

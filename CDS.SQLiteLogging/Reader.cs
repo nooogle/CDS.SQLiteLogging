@@ -49,16 +49,17 @@ public class Reader : IDisposable
     {
         var entries = ImmutableList.CreateBuilder<LogEntry>();
 
-        await connectionManager.ExecuteWithRetryAsync(async () =>
+        await connectionManager.ExecuteWithRetryAsync(() =>
         {
             string sql = $"SELECT * FROM {tableName} ORDER BY {Internal.DatabaseSchema.Columns.DbId} DESC;";
             using var cmd = new SqliteCommand(sql, connectionManager.Connection);
-            using var reader = await Task.Run(() => cmd.ExecuteReader()).ConfigureAwait(false);
-            while (await Task.Run(() => reader.Read()).ConfigureAwait(false))
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
             {
-                var entry = CreateLogEntryFromReader(reader);
-                entries.Add(entry);
+                entries.Add(CreateLogEntryFromReader(reader));
             }
+
+            return Task.CompletedTask;
         }).ConfigureAwait(false);
 
         return entries.ToImmutable();
@@ -68,6 +69,8 @@ public class Reader : IDisposable
     /// Reads and returns all log entries from the database synchronously.
     /// </summary>
     /// <returns>An immutable list of log entries.</returns>
+    /// <remarks>Prefer <see cref="GetAllEntriesAsync"/> to avoid blocking the calling thread.</remarks>
+    [Obsolete("Use GetAllEntriesAsync() to avoid blocking the calling thread, especially from UI or async contexts.")]
     public ImmutableList<LogEntry> GetAllEntries()
     {
         return GetAllEntriesAsync().GetAwaiter().GetResult();
@@ -88,17 +91,18 @@ public class Reader : IDisposable
 
         var entries = ImmutableList.CreateBuilder<LogEntry>();
 
-        await connectionManager.ExecuteWithRetryAsync(async () =>
+        await connectionManager.ExecuteWithRetryAsync(() =>
         {
             string sql = $"SELECT * FROM {tableName} ORDER BY {Internal.DatabaseSchema.Columns.DbId} DESC LIMIT @maxCount;";
             using var cmd = new SqliteCommand(sql, connectionManager.Connection);
             cmd.Parameters.AddWithValue("@maxCount", maxCount);
-            using var reader = await Task.Run(() => cmd.ExecuteReader()).ConfigureAwait(false);
-            while (await Task.Run(() => reader.Read()).ConfigureAwait(false))
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
             {
-                var entry = CreateLogEntryFromReader(reader);
-                entries.Add(entry);
+                entries.Add(CreateLogEntryFromReader(reader));
             }
+
+            return Task.CompletedTask;
         }).ConfigureAwait(false);
 
         return entries.ToImmutable();
@@ -109,6 +113,8 @@ public class Reader : IDisposable
     /// </summary>
     /// <param name="maxCount">The maximum number of entries to return.</param>
     /// <returns>An immutable list of log entries, ordered by timestamp descending.</returns>
+    /// <remarks>Prefer <see cref="GetRecentEntriesAsync"/> to avoid blocking the calling thread.</remarks>
+    [Obsolete("Use GetRecentEntriesAsync() to avoid blocking the calling thread, especially from UI or async contexts.")]
     public ImmutableList<LogEntry> GetRecentEntries(int maxCount)
     {
         return GetRecentEntriesAsync(maxCount).GetAwaiter().GetResult();
@@ -134,17 +140,18 @@ public class Reader : IDisposable
     {
         var entries = ImmutableList.CreateBuilder<LogEntry>();
 
-        await connectionManager.ExecuteWithRetryAsync(async () =>
+        await connectionManager.ExecuteWithRetryAsync(() =>
         {
             string sql = $"SELECT * FROM {tableName} WHERE json_extract({Internal.DatabaseSchema.Columns.Properties}, '$.{{key}}') = @value;";
             using var cmd = new SqliteCommand(sql, connectionManager.Connection);
             cmd.Parameters.AddWithValue("@value", value);
-            using var reader = await Task.Run(() => cmd.ExecuteReader()).ConfigureAwait(false);
-            while (await Task.Run(() => reader.Read()).ConfigureAwait(false))
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
             {
-                var entry = CreateLogEntryFromReader(reader);
-                entries.Add(entry);
+                entries.Add(CreateLogEntryFromReader(reader));
             }
+
+            return Task.CompletedTask;
         }).ConfigureAwait(false);
 
         return entries.ToImmutable();
@@ -159,15 +166,16 @@ public class Reader : IDisposable
     {
         var entries = ImmutableList.CreateBuilder<LogEntry>();
 
-        await connectionManager.ExecuteWithRetryAsync(async () =>
+        await connectionManager.ExecuteWithRetryAsync(() =>
         {
             using var cmd = new SqliteCommand(sqlSelect, connectionManager.Connection);
-            using var reader = await Task.Run(() => cmd.ExecuteReader()).ConfigureAwait(false);
-            while (await Task.Run(() => reader.Read()).ConfigureAwait(false))
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
             {
-                var entry = CreateLogEntryFromReader(reader);
-                entries.Add(entry);
+                entries.Add(CreateLogEntryFromReader(reader));
             }
+
+            return Task.CompletedTask;
         }).ConfigureAwait(false);
 
         return entries.ToImmutable();
@@ -178,6 +186,8 @@ public class Reader : IDisposable
     /// </summary>
     /// <param name="sqlSelect">The SQL select query to execute.</param>
     /// <returns>An enumerable of log entries.</returns>
+    /// <remarks>Prefer <see cref="SelectAsync"/> to avoid blocking the calling thread.</remarks>
+    [Obsolete("Use SelectAsync() to avoid blocking the calling thread, especially from UI or async contexts.")]
     public IEnumerable<LogEntry> Select(string sqlSelect)
     {
         return SelectAsync(sqlSelect).GetAwaiter().GetResult();

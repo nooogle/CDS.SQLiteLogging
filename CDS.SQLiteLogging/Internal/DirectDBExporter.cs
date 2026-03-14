@@ -62,6 +62,10 @@ internal static class DirectDBExporter
 
     /// <summary>
     /// Exports a batch of log entries.
+    /// Microsoft.Data.Sqlite is synchronous — all SQLite calls are made directly
+    /// without per-call <c>Task.Run</c> wrappers. The semaphore in
+    /// <see cref="ConnectionManager.ExecuteInTransactionAsync"/> ensures the work
+    /// already runs off the UI thread.
     /// </summary>
     private static async Task<int> ExportBatchAsync(
         ConnectionManager sourceConnectionManager,
@@ -74,30 +78,32 @@ internal static class DirectDBExporter
     {
         var exportedRowCount = 0;
 
-        await destinationConnectionManager.ExecuteInTransactionAsync(async transaction =>
+        await destinationConnectionManager.ExecuteInTransactionAsync(transaction =>
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             using var selectCmd = BuildSelectCommand(sourceConnectionManager, tableName, idsToExport, startIndex, batchLength);
-            using var reader = await Task.Run(() => selectCmd.ExecuteReader(), cancellationToken).ConfigureAwait(false);
+            using var reader = selectCmd.ExecuteReader();
 
             if (!reader.HasRows)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             // Cache column ordinals for performance
             var columnOrdinals = new ColumnOrdinals(reader);
-            
+
             using var insertCmd = BuildInsertCommand(destinationConnectionManager, tableName, transaction);
 
-            while (await Task.Run(() => reader.Read(), cancellationToken).ConfigureAwait(false))
+            while (reader.Read())
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 PopulateInsertCommand(insertCmd, reader, columnOrdinals);
-                await Task.Run(() => insertCmd.ExecuteNonQuery(), cancellationToken).ConfigureAwait(false);
+                insertCmd.ExecuteNonQuery();
                 exportedRowCount++;
             }
+
+            return Task.CompletedTask;
         }).ConfigureAwait(false);
 
         return exportedRowCount;

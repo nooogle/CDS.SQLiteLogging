@@ -9,6 +9,8 @@ class BatchLogCache : IDisposable
 {
     private readonly ConcurrentQueue<LogEntry> entryQueue = new ConcurrentQueue<LogEntry>();
     private readonly LogWriter logWriter;
+    private readonly LogPipeline? logPipeline;
+    private readonly Action<LogEntry>? onEntryReady;
     private readonly int batchSize;
     private readonly int maxCacheSize;
     private bool disposed;
@@ -33,11 +35,15 @@ class BatchLogCache : IDisposable
     /// </summary>
     /// <param name="logWriter">The SQLite log writer.</param>
     /// <param name="options">Options for configuring batch processing.</param>
-    public BatchLogCache(LogWriter logWriter, BatchingOptions options)
+    /// <param name="logPipeline">Optional pipeline to run on each entry before writing. Executed on the processing thread, not the caller thread.</param>
+    /// <param name="onEntryReady">Optional callback invoked on the processing thread after the pipeline runs, before the DB write. Used to notify live UI subscribers.</param>
+    public BatchLogCache(LogWriter logWriter, BatchingOptions options, LogPipeline? logPipeline = null, Action<LogEntry>? onEntryReady = null)
     {
         this.logWriter = logWriter ?? throw new ArgumentNullException(nameof(logWriter));
         batchSize = options?.BatchSize ?? throw new ArgumentNullException(nameof(options));
         maxCacheSize = options.MaxCacheSize;
+        this.logPipeline = logPipeline;
+        this.onEntryReady = onEntryReady;
 
         // Create and start the dedicated processing thread
         processingThread = new Thread(ProcessEntriesLoop)
@@ -206,47 +212,80 @@ class BatchLogCache : IDisposable
 
     /// <summary>
     /// Writes a batch of entries to the database.
+    /// Pipeline (if any) and the <see cref="onEntryReady"/> callback both run on this
+    /// dedicated background thread, never on the original caller thread.
     /// </summary>
     private void WriteBatch()
     {
-        // Check if there's anything to write or if we're disposed
         if (pendingEntries == 0 || disposed)
         {
             return;
         }
 
-        // Take a snapshot of entries to process
-        var entries = new List<LogEntry>(Math.Min(batchSize, pendingEntries));
-        int processed = 0;
+        var toWrite = new List<LogEntry>(Math.Min(batchSize, pendingEntries));
+        int dequeued = 0;
 
-        // Dequeue entries up to batch size
-        while (processed < batchSize && entryQueue.TryDequeue(out var entry))
+        while (dequeued < batchSize && entryQueue.TryDequeue(out var entry))
         {
-            entries.Add(entry);
-            processed++;
+            dequeued++;
+
+            if (!ApplyPipeline(entry))
+            {
+                // Pipeline rejected/failed this entry — discard it and move on.
+                continue;
+            }
+
+            // Notify live UI subscribers (e.g. LogEntryUICache) after enrichment.
+            onEntryReady?.Invoke(entry);
+            toWrite.Add(entry);
         }
 
-        if (entries.Count > 0)
+        if (toWrite.Count > 0)
         {
             try
             {
-                // Write entries to database in a transaction
-                logWriter.AddBatch(entries);
-
-                // Update the counter
-                Interlocked.Add(ref pendingEntries, -processed);
+                logWriter.AddBatch(toWrite);
             }
             catch (Exception)
             {
-                // If writing fails, put the entries back in the queue
-                foreach (var entry in entries)
+                // DB write failed — put writable entries back for retry.
+                foreach (var entry in toWrite)
                 {
                     entryQueue.Enqueue(entry);
                 }
 
-                // Don't re-adjust the counter since we put the entries back
+                // Discard the pipeline-failed entries (already skipped above).
+                Interlocked.Add(ref pendingEntries, -(dequeued - toWrite.Count));
                 throw;
             }
+        }
+
+        // All dequeued entries are accounted for: written to DB or pipeline-discarded.
+        Interlocked.Add(ref pendingEntries, -dequeued);
+    }
+
+    /// <summary>
+    /// Applies the pipeline to an entry. Returns <c>false</c> if the pipeline throws,
+    /// in which case the entry is silently discarded.
+    /// </summary>
+    private bool ApplyPipeline(LogEntry entry)
+    {
+        if (logPipeline == null)
+        {
+            return true;
+        }
+
+        try
+        {
+            // Safe to call .GetAwaiter().GetResult() here — we are on the dedicated
+            // background processing thread, never on a UI or synchronisation context.
+            logPipeline.ExecuteAsync(entry).GetAwaiter().GetResult();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Log pipeline error — entry will be discarded: {ex.Message}");
+            return false;
         }
     }
 
@@ -295,11 +334,31 @@ class BatchLogCache : IDisposable
 
     /// <summary>
     /// Synchronously waits until all pending log entries have been written to the database.
+    /// Uses a true blocking poll so it is safe to call from any thread without deadlock risk.
     /// </summary>
-    /// <param name="timeout">Optional timeout in milliseconds. Default is 30 seconds.</param>
-    /// <returns>True if all entries were written, false if timeout occurred.</returns>
+    /// <param name="timeout">Maximum time to wait before returning <c>false</c>.</param>
+    /// <returns><c>true</c> if all entries were written; <c>false</c> if the timeout elapsed.</returns>
     public bool WaitUntilCacheIsEmpty(TimeSpan timeout)
     {
-        return WaitUntilCacheIsEmptyAsync(timeout).GetAwaiter().GetResult();
+        if (disposed)
+        {
+            return true;
+        }
+
+        // Signal the processing thread so it doesn't stay idle.
+        processEvent.Set();
+
+        var deadline = DateTime.UtcNow + timeout;
+        while (pendingEntries > 0 && !disposed)
+        {
+            if (DateTime.UtcNow >= deadline)
+            {
+                return false;
+            }
+
+            Thread.Sleep(10);
+        }
+
+        return pendingEntries == 0;
     }
 }

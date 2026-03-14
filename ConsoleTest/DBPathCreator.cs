@@ -13,11 +13,13 @@ static class DBPathCreator
     /// <returns>The full path to the SQLite database file.</returns>
     public static string Create()
     {
-        return Path.Combine(
+        var path = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
             nameof(CDS),
             nameof(CDS.SQLiteLogging),
             nameof(ConsoleTest),
             $"Log_V{MELLogger.DBSchemaVersion}.db");
+
+        return path;
     }
 }

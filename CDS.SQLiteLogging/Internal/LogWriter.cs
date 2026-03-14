@@ -30,13 +30,21 @@ class LogWriter
     }
 
     /// <summary>
-    /// Adds a new log entry to the database using a transaction.
+    /// Adds a new log entry to the database synchronously.
     /// </summary>
     /// <param name="entry">The log entry to add.</param>
+    /// <remarks>Prefer <see cref="AddBatch"/> or <see cref="AddBatchAsync"/> for better throughput.</remarks>
+    [Obsolete("Use AddBatch or AddBatchAsync for better throughput.")]
     public void Add(LogEntry entry)
     {
         if (entry == null) throw new ArgumentNullException(nameof(entry));
-        AddAsync(entry).GetAwaiter().GetResult();
+
+        connectionManager.ExecuteInTransaction(transaction =>
+        {
+            using var cmd = new SqliteCommand(sqlInsert, connectionManager.Connection, transaction);
+            AddParametersToCommand(cmd, entry);
+            cmd.ExecuteNonQuery();
+        });
     }
 
     /// <summary>
@@ -47,13 +55,12 @@ class LogWriter
     public async Task AddAsync(LogEntry entry)
     {
         if (entry == null) throw new ArgumentNullException(nameof(entry));
-        await connectionManager.ExecuteInTransactionAsync(async transaction =>
+        await connectionManager.ExecuteInTransactionAsync(transaction =>
         {
-            using (var cmd = new SqliteCommand(sqlInsert, connectionManager.Connection, transaction))
-            {
-                AddParametersToCommand(cmd, entry);
-                await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
-            }
+            using var cmd = new SqliteCommand(sqlInsert, connectionManager.Connection, transaction);
+            AddParametersToCommand(cmd, entry);
+            cmd.ExecuteNonQuery();
+            return Task.CompletedTask;
         }).ConfigureAwait(false);
     }
 
@@ -65,18 +72,18 @@ class LogWriter
     public async Task AddBatchAsync(IEnumerable<LogEntry> entries)
     {
         if (entries == null) throw new ArgumentNullException(nameof(entries));
-        await connectionManager.ExecuteInTransactionAsync(async transaction =>
+        await connectionManager.ExecuteInTransactionAsync(transaction =>
         {
-            using (var cmd = new SqliteCommand(sqlInsert, connectionManager.Connection, transaction))
+            using var cmd = new SqliteCommand(sqlInsert, connectionManager.Connection, transaction);
+            foreach (var entry in entries)
             {
-                foreach (var entry in entries)
-                {
-                    if (entry == null) throw new ArgumentNullException(nameof(entries), "One of the entries is null.");
-                    cmd.Parameters.Clear();
-                    AddParametersToCommand(cmd, entry);
-                    await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
-                }
+                if (entry == null) throw new ArgumentNullException(nameof(entries), "One of the entries is null.");
+                cmd.Parameters.Clear();
+                AddParametersToCommand(cmd, entry);
+                cmd.ExecuteNonQuery();
             }
+
+            return Task.CompletedTask;
         }).ConfigureAwait(false);
     }
 

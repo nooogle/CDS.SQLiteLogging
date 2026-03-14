@@ -20,6 +20,9 @@ class LoggerSoakTest
     private long minAddTimeMs = long.MaxValue;
     private long maxAddTimeMs = 0;
     private long totalAddTimeMs = 0;
+    private int lastHousekeepingDeletedCount;
+    private long lastDbFileSizeBytes;
+    private int metricsTickCount;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LoggerSoakTest"/> class.
@@ -49,8 +52,7 @@ class LoggerSoakTest
 
         Console.WriteLine("Starting soak test. Press any key to stop...");
         Console.WriteLine($"Adding {entriesPerSecond} log entries per second");
-        Console.WriteLine("Housekeeping configured to run every 2 minutes");
-        Console.WriteLine("Retention period set to 1 minute");
+        Console.WriteLine("Housekeeping runs every 30 seconds (uses current HouseKeepingOptions).");
         Console.WriteLine();
 
         // Start the test in a background thread
@@ -163,6 +165,15 @@ class LoggerSoakTest
             {
                 // Report every 5 seconds
                 await Task.Delay(5000, cancellationToken);
+
+                // Run housekeeping every 30 seconds (every 6th metrics tick)
+                metricsTickCount++;
+                if (metricsTickCount % 6 == 0)
+                {
+                    lastHousekeepingDeletedCount = loggerUtilities.ExecuteHousekeeping();
+                    lastDbFileSizeBytes = loggerUtilities.GetDatabaseFileSize();
+                }
+
                 DisplayCurrentStatistics();
             }
         }
@@ -220,6 +231,7 @@ class LoggerSoakTest
         Console.WriteLine($"Running for: {elapsedTime:hh\\:mm\\:ss}");
         Console.WriteLine($"Entries added: {entriesAdded:N0} ({entriesPerSecond:N2}/sec)");
         Console.WriteLine($"Entries pending in cache: {pendingEntries:N0}, discarded entry count: {discardedEntries:N0}");
+        Console.WriteLine($"DB file size: {lastDbFileSizeBytes / 1024.0 / 1024.0:N1} MB  |  Last housekeeping deleted: {lastHousekeepingDeletedCount:N0} rows");
         Console.WriteLine();
         Console.WriteLine("Log Entry Add Performance:");
         Console.WriteLine($"  Min: {min} ms");

@@ -31,6 +31,13 @@ class TableCreator
         string sql = $"CREATE TABLE IF NOT EXISTS {TableName} ({string.Join(", ", columnDefinitions)});";
         connectionManager.ExecuteNonQuery(sql);
 
+        // Index supporting time-based housekeeping (WHERE Timestamp < @cutoffDate).
+        // Without this the delete is a full table scan. CREATE INDEX IF NOT EXISTS is
+        // idempotent so this is safe to run against existing databases.
+        connectionManager.ExecuteNonQuery(
+            $"CREATE INDEX IF NOT EXISTS IX_{TableName}_{DatabaseSchema.Columns.Timestamp} " +
+            $"ON {TableName} ({DatabaseSchema.Columns.Timestamp});");
+
         return TableName;
     }
 }

@@ -12,7 +12,6 @@ class Logger : IDisposable, ISQLiteWriterUtilities
     private readonly Housekeeper housekeeper;
     private readonly BatchLogCache logCache;
     private bool disposed;
-    private readonly LogPipeline? logPipeline;
 
     /// <summary>
     /// Event that is raised when a log entry is received.
@@ -47,7 +46,11 @@ class Logger : IDisposable, ISQLiteWriterUtilities
 
         // Setup batching with defaults if options not provided
         batchingOptions ??= new BatchingOptions();
-        logCache = new BatchLogCache(writer, batchingOptions);
+        logCache = new BatchLogCache(
+            writer,
+            batchingOptions,
+            logPipeline,
+            entry => LogEntryReceived?.Invoke(entry));
 
         // Initialize housekeeper with defaults if not specified
         houseKeepingOptions ??= new HouseKeepingOptions();
@@ -56,9 +59,6 @@ class Logger : IDisposable, ISQLiteWriterUtilities
             connectionManager,
             houseKeepingOptions,
             dateTimeProvider);
-
-        // Initialize log pipeline
-        this.logPipeline = logPipeline;
     }
 
     /// <summary>
@@ -73,6 +73,8 @@ class Logger : IDisposable, ISQLiteWriterUtilities
 
     /// <summary>
     /// Adds a new log entry to the cache for batch processing.
+    /// The log pipeline (if configured) and the <see cref="LogEntryReceived"/> event
+    /// are both invoked on the internal background processing thread, not the caller thread.
     /// </summary>
     /// <param name="entry">The log entry to add.</param>
     public void Add(LogEntry entry)
@@ -82,15 +84,7 @@ class Logger : IDisposable, ISQLiteWriterUtilities
             throw new ObjectDisposedException(nameof(Logger));
         }
 
-        // Pass through global pipeline before writing
-        if (logPipeline != null)
-        {
-            logPipeline.ExecuteAsync(entry).GetAwaiter().GetResult();
-        }
-
-        // Add the entry to the cache
         logCache.Add(entry);
-        LogEntryReceived?.Invoke(entry);
     }
 
     /// <summary>
@@ -189,6 +183,17 @@ class Logger : IDisposable, ISQLiteWriterUtilities
     /// </summary>
     public void ResetDiscardedEntriesCount() => logCache.ResetDiscardCount();
 
+    /// <inheritdoc />
+    public int ExecuteHousekeeping()
+    {
+        if (disposed)
+        {
+            throw new ObjectDisposedException(nameof(Logger));
+        }
+
+        return housekeeper.ExecuteHousekeeping();
+    }
+
     /// <summary>
     /// Waits until all pending log entries have been written to the database.
     /// </summary>
@@ -215,6 +220,6 @@ class Logger : IDisposable, ISQLiteWriterUtilities
             throw new ObjectDisposedException(nameof(Logger));
         }
 
-        return Task.Run(() => logCache.WaitUntilCacheIsEmpty(timeout));
+        return logCache.WaitUntilCacheIsEmptyAsync(timeout);
     }
 }
