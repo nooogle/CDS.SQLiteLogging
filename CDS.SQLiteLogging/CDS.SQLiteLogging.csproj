@@ -35,11 +35,11 @@
 
   <!-- Common packages for all target frameworks -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.4" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.4" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.4" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="System.Collections.Immutable" Version="10.0.4" />
+    <PackageReference Include="System.Collections.Immutable" Version="10.0.5" />
   </ItemGroup>
 
   <!-- Packages specific to .NET Framework 4.8 -->
@@ -49,7 +49,7 @@
 
   <!-- Packages specific to .NET 8.0 and .NET 10.0 -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0' OR '$(TargetFramework)' == 'net10.0'">
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.4" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.5" />
   </ItemGroup>
 
   <!-- Aliases for .NET 8.0 and .NET 10.0 -->
