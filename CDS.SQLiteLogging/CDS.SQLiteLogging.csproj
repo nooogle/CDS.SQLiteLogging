@@ -44,7 +44,7 @@
 
   <!-- Packages specific to .NET Framework 4.8 -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
-    <PackageReference Include="System.Data.SQLite" Version="2.0.2" />
+    <PackageReference Include="System.Data.SQLite" Version="2.0.3" />
   </ItemGroup>
 
   <!-- Packages specific to .NET 8.0 and .NET 10.0 -->
