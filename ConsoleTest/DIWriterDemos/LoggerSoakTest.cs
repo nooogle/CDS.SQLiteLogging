@@ -53,6 +53,7 @@ class LoggerSoakTest
         Console.WriteLine("Starting soak test. Press any key to stop...");
         Console.WriteLine($"Adding {entriesPerSecond} log entries per second");
         Console.WriteLine("Housekeeping runs every 30 seconds (uses current HouseKeepingOptions).");
+        Console.WriteLine("Performing a short warm-up before metrics begin...");
         Console.WriteLine();
 
         // Start the test in a background thread
@@ -78,11 +79,14 @@ class LoggerSoakTest
     /// <param name="cancellationToken">Token to monitor for cancellation.</param>
     private async Task RunTestAsync(CancellationToken cancellationToken)
     {
-        stopwatchTotal.Start();
         int counter = 0;
 
         try
         {
+            await WarmUpAsync(cancellationToken);
+
+            stopwatchTotal.Start();
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 // Add entries for this second
@@ -118,6 +122,20 @@ class LoggerSoakTest
                 Console.WriteLine($"Error flushing logs: {ex.Message}");
             }
         }
+    }
+
+    /// <summary>
+    /// Performs a small warm-up so JIT compilation and initial database setup are less likely to skew the first measured log entry timings.
+    /// </summary>
+    /// <param name="cancellationToken">Token to monitor for cancellation.</param>
+    private async Task WarmUpAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        logger.LogInformation("Warm-up log entry for soak test metrics.");
+
+        // Wait for the warm-up entry to be flushed so the measured run starts after the initial JIT and SQLite startup work.
+        await loggerUtilities.WaitUntilCacheIsEmptyAsync(timeout: TimeSpan.FromSeconds(10));
     }
 
     /// <summary>

@@ -31,11 +31,12 @@ class Logger : IDisposable, ISQLiteWriterUtilities
         string fileName,
         BatchingOptions batchingOptions,
         HouseKeepingOptions houseKeepingOptions,
+        DatabaseOptions databaseOptions,
         IDateTimeProvider dateTimeProvider,
         LogPipeline? logPipeline)
     {
         // Initialize connection manager
-        connectionManager = new ConnectionManager(fileName);
+        connectionManager = new ConnectionManager(fileName, databaseOptions);
 
         // Create table schema
         var tableCreator = new TableCreator(connectionManager);

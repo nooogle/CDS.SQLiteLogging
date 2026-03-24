@@ -38,9 +38,10 @@ public class MELLoggerProvider : ILoggerProvider
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
     /// <param name="logPipeline">Optional log pipeline for processing entries before writing.</param>
     private MELLoggerProvider(
-        string fileName, 
-        BatchingOptions batchingOptions, 
+        string fileName,
+        BatchingOptions batchingOptions,
         HouseKeepingOptions houseKeepingOptions,
+        DatabaseOptions databaseOptions,
         IDateTimeProvider dateTimeProvider,
         LogPipeline? logPipeline)
     {
@@ -50,6 +51,7 @@ public class MELLoggerProvider : ILoggerProvider
             fileName: fileName,
             batchingOptions,
             houseKeepingOptions,
+            databaseOptions,
             dateTimeProvider,
             logPipeline);
     }
@@ -67,7 +69,36 @@ public class MELLoggerProvider : ILoggerProvider
     /// A new instance of the <see cref="MELLoggerProvider"/> class.
     /// </returns>
     public static MELLoggerProvider Create(
-        string fileName, 
+        string fileName,
+        BatchingOptions? batchingOptions = null,
+        HouseKeepingOptions? houseKeepingOptions = null,
+        IDateTimeProvider? dateTimeProvider = null,
+        LogPipeline? logPipeline = null)
+    {
+        return Create(
+            fileName: fileName,
+            databaseOptions: new DatabaseOptions(),
+            batchingOptions: batchingOptions,
+            houseKeepingOptions: houseKeepingOptions,
+            dateTimeProvider: dateTimeProvider,
+            logPipeline: logPipeline);
+    }
+
+    /// <summary>
+    /// Creates a new instance of the <see cref="MELLoggerProvider"/> class.
+    /// </summary>
+    /// <param name="fileName"> The name of the SQLite database file.</param>
+    /// <param name="databaseOptions">Options for configuring SQLite connection behavior.</param>
+    /// <param name="batchingOptions">Options for configuring batch processing.</param>
+    /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
+    /// <param name="dateTimeProvider">Optional date time provider for timestamping log entries.</param>
+    /// <param name="logPipeline">Optional log pipeline for processing entries before writing.</param>
+    /// <returns>
+    /// A new instance of the <see cref="MELLoggerProvider"/> class.
+    /// </returns>
+    public static MELLoggerProvider Create(
+        string fileName,
+        DatabaseOptions databaseOptions,
         BatchingOptions? batchingOptions = null,
         HouseKeepingOptions? houseKeepingOptions = null,
         IDateTimeProvider? dateTimeProvider = null,
@@ -77,6 +108,7 @@ public class MELLoggerProvider : ILoggerProvider
             fileName: fileName,
             batchingOptions: batchingOptions ?? new BatchingOptions(),
             houseKeepingOptions: houseKeepingOptions ?? new HouseKeepingOptions(),
+            databaseOptions: databaseOptions ?? throw new ArgumentNullException(nameof(databaseOptions)),
             dateTimeProvider: dateTimeProvider ?? new DefaultDateTimeProvider(),
             logPipeline: logPipeline);
     }

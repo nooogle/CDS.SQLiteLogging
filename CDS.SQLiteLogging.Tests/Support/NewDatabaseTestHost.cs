@@ -10,6 +10,7 @@ class NewDatabaseTestHost
 {
     public LogPipeline LogPipeline { get; set; }
     public BatchingOptions BatchingOptions { get; set; } = new BatchingOptions();
+    public DatabaseOptions DatabaseOptions { get; set; } = new DatabaseOptions();
     public HouseKeepingOptions HouseKeepingOptions { get; set; } = new HouseKeepingOptions();
     public IDateTimeProvider DateTimeProvider { get; set; } = new DefaultDateTimeProvider();
 
@@ -32,6 +33,7 @@ class NewDatabaseTestHost
         // Create the SQLite logger provider
         var sqliteLoggerProvider = MEL.MELLoggerProvider.Create(
             fileName: dbPath,
+            databaseOptions: DatabaseOptions,
             batchingOptions: BatchingOptions,
             houseKeepingOptions: HouseKeepingOptions,
             dateTimeProvider: DateTimeProvider,

@@ -11,6 +11,7 @@ class ConnectionManager : IDisposable
 {
     private readonly string fileName;
     private readonly SqliteConnection connection;
+    private readonly DatabaseOptions databaseOptions;
     private bool disposed;
     private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
 
@@ -20,13 +21,25 @@ class ConnectionManager : IDisposable
     /// </summary>
     /// <param name="fileName">The name of the SQLite database file.</param>
     public ConnectionManager(string fileName)
+        : this(fileName, new DatabaseOptions())
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ConnectionManager"/> class.
+    /// </summary>
+    /// <param name="fileName">The name of the SQLite database file.</param>
+    /// <param name="databaseOptions">The SQLite database options to apply to the connection.</param>
+    public ConnectionManager(string fileName, DatabaseOptions databaseOptions)
     {
         var folderPath = Path.GetDirectoryName(fileName) ?? string.Empty;
         Directory.CreateDirectory(folderPath);
 
         this.fileName = fileName;
+        this.databaseOptions = databaseOptions ?? throw new ArgumentNullException(nameof(databaseOptions));
         connection = CreateDbConnection(this.fileName);
         connection.Open();
+        ConfigureConnectionDefaults();
     }
 
 
@@ -48,6 +61,28 @@ class ConnectionManager : IDisposable
     /// Gets the SQLite connection.
     /// </summary>
     public SqliteConnection Connection => connection;
+
+    /// <summary>
+    /// Applies the default SQLite PRAGMA settings for this connection.
+    /// </summary>
+    private void ConfigureConnectionDefaults()
+    {
+        ExecuteNonQuery("PRAGMA journal_mode = WAL;");
+        ExecuteNonQuery($"PRAGMA synchronous = {GetSynchronousModePragmaValue()};");
+    }
+
+    /// <summary>
+    /// Gets the SQLite PRAGMA literal for the configured synchronous mode.
+    /// </summary>
+    /// <returns>The SQLite PRAGMA literal.</returns>
+    private string GetSynchronousModePragmaValue() => databaseOptions.SynchronousMode switch
+    {
+        SqliteSynchronousMode.Off => "OFF",
+        SqliteSynchronousMode.Normal => "NORMAL",
+        SqliteSynchronousMode.Full => "FULL",
+        SqliteSynchronousMode.Extra => "EXTRA",
+        _ => throw new ArgumentOutOfRangeException(nameof(databaseOptions.SynchronousMode), databaseOptions.SynchronousMode, "Unsupported SQLite synchronous mode."),
+    };
 
     /// <summary>
     /// Gets the database file path.

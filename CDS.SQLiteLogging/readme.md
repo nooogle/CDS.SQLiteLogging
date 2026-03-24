@@ -44,6 +44,7 @@ To set up the library in a .NET application, follow these steps:
 
 ```csharp
 using CDS.SQLiteLogging;
+using CDS.SQLiteLogging.MEL;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -51,7 +52,7 @@ using Microsoft.Extensions.Logging;
 string dbPath = GetDatabasePath();
 
 // Create the SQLite logger provider
-var sqliteLoggerProvider = MSSQLiteLoggerProvider.Create(dbPath);
+var sqliteLoggerProvider = MELLoggerProvider.Create(dbPath);
 
 // Setup dependency injection
 using var serviceProvider = new ServiceCollection()
@@ -75,7 +76,7 @@ private static string GetDatabasePath()
         nameof(CDS),
         nameof(CDS.SQLiteLogging),
         nameof(ConsoleTest),
-        $"Log_V{MSSQLiteLogger.DBSchemaVersion}.db");
+        $"Log_V{MELLogger.DBSchemaVersion}.db");
 }
 ```
 
@@ -136,6 +137,39 @@ class DemoService(ILogger<DemoService> logger)
 - **RetentionPeriod**: The retention period for log entries.
 - **CleanupInterval**: The interval between cleanup operations.
 
+#### Database Options
+
+By default, the library uses `PRAGMA journal_mode = WAL` and `PRAGMA synchronous = NORMAL`.
+You can override the synchronous mode by supplying `DatabaseOptions` when creating the provider.
+
+```csharp
+using CDS.SQLiteLogging;
+using CDS.SQLiteLogging.MEL;
+
+var normalProvider = MELLoggerProvider.Create(
+    fileName: dbPath,
+    databaseOptions: new DatabaseOptions
+    {
+        SynchronousMode = SqliteSynchronousMode.Normal,
+    });
+
+var offProvider = MELLoggerProvider.Create(
+    fileName: dbPath,
+    databaseOptions: new DatabaseOptions
+    {
+        SynchronousMode = SqliteSynchronousMode.Off,
+    });
+
+var fullProvider = MELLoggerProvider.Create(
+    fileName: dbPath,
+    databaseOptions: new DatabaseOptions
+    {
+        SynchronousMode = SqliteSynchronousMode.Full,
+    });
+```
+
+Supported values are `SqliteSynchronousMode.Off`, `SqliteSynchronousMode.Normal`, `SqliteSynchronousMode.Full`, and `SqliteSynchronousMode.Extra`.
+
 
 
 ## API Reference
@@ -145,7 +179,9 @@ class DemoService(ILogger<DemoService> logger)
 - **SQLiteWriter**: Provides writing capabilities for SQLite logging with caching, batching, and housekeeping.
 - **SQLiteReader**: Provides read-only access to SQLite log entries.
 - **BatchingOptions**: Configuration options for batch processing of log entries.
+- **DatabaseOptions**: Configuration options for SQLite connection behavior.
 - **HouseKeepingOptions**: Configuration options for housekeeping of log entries.
+- **SqliteSynchronousMode**: Supported values for `PRAGMA synchronous`.
 
 ## Contributing
 
