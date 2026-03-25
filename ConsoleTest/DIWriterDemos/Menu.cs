@@ -35,6 +35,7 @@ class Menu
         // Create the SQLite logger provider
         var sqliteLoggerProvider = MELLoggerProvider.Create(
             DBPathCreator.Create(),
+            databaseOptions: new DatabaseOptions { JournalMode = SqliteJournalMode.Memory, SynchronousMode = SqliteSynchronousMode.Off },
             batchingOptions,
             houseKeepingOptions);
 

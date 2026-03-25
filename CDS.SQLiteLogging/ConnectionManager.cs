@@ -64,12 +64,28 @@ class ConnectionManager : IDisposable
 
     /// <summary>
     /// Applies the default SQLite PRAGMA settings for this connection.
+    /// Journal mode is applied first; some synchronous-mode semantics differ per journal mode.
     /// </summary>
     private void ConfigureConnectionDefaults()
     {
-        ExecuteNonQuery("PRAGMA journal_mode = WAL;");
+        ExecuteNonQuery($"PRAGMA journal_mode = {GetJournalModePragmaValue()};");
         ExecuteNonQuery($"PRAGMA synchronous = {GetSynchronousModePragmaValue()};");
     }
+
+    /// <summary>
+    /// Gets the SQLite PRAGMA literal for the configured journal mode.
+    /// </summary>
+    /// <returns>The SQLite PRAGMA literal.</returns>
+    private string GetJournalModePragmaValue() => databaseOptions.JournalMode switch
+    {
+        SqliteJournalMode.Delete => "DELETE",
+        SqliteJournalMode.Truncate => "TRUNCATE",
+        SqliteJournalMode.Persist => "PERSIST",
+        SqliteJournalMode.Memory => "MEMORY",
+        SqliteJournalMode.Wal => "WAL",
+        SqliteJournalMode.Off => "OFF",
+        _ => throw new ArgumentOutOfRangeException(nameof(databaseOptions.JournalMode), databaseOptions.JournalMode, "Unsupported SQLite journal mode."),
+    };
 
     /// <summary>
     /// Gets the SQLite PRAGMA literal for the configured synchronous mode.

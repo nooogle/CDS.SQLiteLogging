@@ -139,36 +139,35 @@ class DemoService(ILogger<DemoService> logger)
 
 #### Database Options
 
-By default, the library uses `PRAGMA journal_mode = WAL` and `PRAGMA synchronous = NORMAL`.
-You can override the synchronous mode by supplying `DatabaseOptions` when creating the provider.
+By default, the library uses SQLite's native `PRAGMA journal_mode = DELETE` and `PRAGMA synchronous = NORMAL`.
+Both can be overridden by supplying `DatabaseOptions` when creating the provider.
 
 ```csharp
 using CDS.SQLiteLogging;
 using CDS.SQLiteLogging.MEL;
 
-var normalProvider = MELLoggerProvider.Create(
+// WAL mode with NORMAL synchronous (good general-purpose choice)
+var walProvider = MELLoggerProvider.Create(
     fileName: dbPath,
     databaseOptions: new DatabaseOptions
     {
+        JournalMode = SqliteJournalMode.Wal,
         SynchronousMode = SqliteSynchronousMode.Normal,
     });
 
-var offProvider = MELLoggerProvider.Create(
+// In-memory journal with synchronous OFF (maximum write speed, no durability)
+var fastProvider = MELLoggerProvider.Create(
     fileName: dbPath,
     databaseOptions: new DatabaseOptions
     {
+        JournalMode = SqliteJournalMode.Memory,
         SynchronousMode = SqliteSynchronousMode.Off,
-    });
-
-var fullProvider = MELLoggerProvider.Create(
-    fileName: dbPath,
-    databaseOptions: new DatabaseOptions
-    {
-        SynchronousMode = SqliteSynchronousMode.Full,
     });
 ```
 
-Supported values are `SqliteSynchronousMode.Off`, `SqliteSynchronousMode.Normal`, `SqliteSynchronousMode.Full`, and `SqliteSynchronousMode.Extra`.
+Supported `SqliteJournalMode` values: `Delete` (default), `Truncate`, `Persist`, `Memory`, `Wal`, `Off`.
+
+Supported `SqliteSynchronousMode` values: `Off`, `Normal` (default), `Full`, `Extra`.
 
 
 

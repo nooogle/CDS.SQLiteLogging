@@ -46,6 +46,6 @@ public class LogPipeline
             return current.InvokeAsync(data, Next);
         }
 
-        await Next();
+        await Next().ConfigureAwait(false);
     }
 }

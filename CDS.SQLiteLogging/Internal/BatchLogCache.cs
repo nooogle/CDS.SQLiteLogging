@@ -35,7 +35,7 @@ class BatchLogCache : IDisposable
     /// </summary>
     /// <param name="logWriter">The SQLite log writer.</param>
     /// <param name="options">Options for configuring batch processing.</param>
-    /// <param name="logPipeline">Optional pipeline to run on each entry before writing. Executed on the processing thread, not the caller thread.</param>
+    /// <param name="logPipeline">Optional pipeline applied on the caller thread inside <see cref="Add"/>, ensuring ambient context (e.g. <see cref="GlobalLogContext"/>) is captured at the moment of the log call.</param>
     /// <param name="onEntryReady">Optional callback invoked on the processing thread after the pipeline runs, before the DB write. Used to notify live UI subscribers.</param>
     public BatchLogCache(LogWriter logWriter, BatchingOptions options, LogPipeline? logPipeline = null, Action<LogEntry>? onEntryReady = null)
     {
@@ -110,6 +110,15 @@ class BatchLogCache : IDisposable
         if (entry == null)
         {
             throw new ArgumentNullException(nameof(entry));
+        }
+
+        // Apply the pipeline on the caller thread so that ambient context values such as
+        // GlobalLogContext are captured at the moment of the log call, not when the
+        // background thread dequeues the entry.
+        if (!ApplyPipeline(entry))
+        {
+            // Pipeline rejected or threw — silently discard the entry.
+            return;
         }
 
         if (pendingEntries >= maxCacheSize)
@@ -212,8 +221,8 @@ class BatchLogCache : IDisposable
 
     /// <summary>
     /// Writes a batch of entries to the database.
-    /// Pipeline (if any) and the <see cref="onEntryReady"/> callback both run on this
-    /// dedicated background thread, never on the original caller thread.
+    /// The pipeline has already been applied on the caller thread (inside <see cref="Add"/>);
+    /// this method only handles the live-UI callback and the DB write.
     /// </summary>
     private void WriteBatch()
     {
@@ -229,13 +238,7 @@ class BatchLogCache : IDisposable
         {
             dequeued++;
 
-            if (!ApplyPipeline(entry))
-            {
-                // Pipeline rejected/failed this entry — discard it and move on.
-                continue;
-            }
-
-            // Notify live UI subscribers (e.g. LogEntryUICache) after enrichment.
+            // Notify live UI subscribers (e.g. LogEntryUICache) before the DB write.
             onEntryReady?.Invoke(entry);
             toWrite.Add(entry);
         }
@@ -248,25 +251,25 @@ class BatchLogCache : IDisposable
             }
             catch (Exception)
             {
-                // DB write failed — put writable entries back for retry.
+                // DB write failed — put entries back for retry.
                 foreach (var entry in toWrite)
                 {
                     entryQueue.Enqueue(entry);
                 }
 
-                // Discard the pipeline-failed entries (already skipped above).
-                Interlocked.Add(ref pendingEntries, -(dequeued - toWrite.Count));
                 throw;
             }
         }
 
-        // All dequeued entries are accounted for: written to DB or pipeline-discarded.
+        // All dequeued entries are accounted for: written to DB or re-queued on failure.
         Interlocked.Add(ref pendingEntries, -dequeued);
     }
 
     /// <summary>
     /// Applies the pipeline to an entry. Returns <c>false</c> if the pipeline throws,
     /// in which case the entry is silently discarded.
+    /// Called on the caller thread inside <see cref="Add"/> so that ambient context
+    /// (e.g. <see cref="GlobalLogContext"/>) is captured at the moment of the log call.
     /// </summary>
     private bool ApplyPipeline(LogEntry entry)
     {
@@ -277,8 +280,9 @@ class BatchLogCache : IDisposable
 
         try
         {
-            // Safe to call .GetAwaiter().GetResult() here — we are on the dedicated
-            // background processing thread, never on a UI or synchronisation context.
+            // .GetAwaiter().GetResult() is safe here because LogPipeline.ExecuteAsync
+            // uses ConfigureAwait(false) throughout, so it never attempts to resume on
+            // the caller's synchronisation context.
             logPipeline.ExecuteAsync(entry).GetAwaiter().GetResult();
             return true;
         }
