@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /c/dev/nooogle/CDS.SQLiteLogging pull)",
+      "Bash(gh label:*)"
+    ]
+  }
+}
