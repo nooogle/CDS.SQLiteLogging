@@ -48,7 +48,7 @@ internal static class DemoRunner
             // Step 3: Read all entries from source database
             Console.WriteLine("Reading log entries from source database...");
             using var reader = new Reader(dbPath);
-            var allEntries = reader.GetAllEntries();
+            IList<LogEntry> allEntries = await reader.GetAllEntriesAsync().ConfigureAwait(false);
 
             if (allEntries.Count == 0)
             {
@@ -87,7 +87,7 @@ internal static class DemoRunner
 
             // Step 7: Display sample entries from export
             Console.WriteLine("\nSample of exported entries:");
-            var sampleEntries = exportedReader.GetRecentEntries(5);
+            var sampleEntries = await exportedReader.GetRecentEntriesAsync(5).ConfigureAwait(false);
             foreach (var entry in sampleEntries)
             {
                 Console.WriteLine($"  [{entry.Level}] {entry.Timestamp:yyyy-MM-dd HH:mm:ss} - {entry.RenderedMessage}");

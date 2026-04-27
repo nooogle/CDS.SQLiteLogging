@@ -67,7 +67,7 @@ class DemoRunner
             .BuildServiceProvider();
 
         // Run the demo service, which writes log entries
-        serviceProvider.GetRequiredService<DemoService>().Run();
+        serviceProvider.GetRequiredService<DemoService>().RunAsync().Wait();
 
         // Ensure all pending log entries are written before disposing the service provider
         var loggerUtilities = sqliteLoggerProvider.LoggerUtilities;
@@ -90,7 +90,7 @@ class DemoRunner
         Console.WriteLine($"Number of entries: {numEntries}");
 
         // Retrieve and display all log entries, showing global context values
-        var allEntries = sqliteReader.GetAllEntries();
+        var allEntries = sqliteReader.GetAllEntriesAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         allEntries.ForEach(entry =>
         {
             Console.WriteLine(

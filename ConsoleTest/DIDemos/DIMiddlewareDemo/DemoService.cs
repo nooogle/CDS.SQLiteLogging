@@ -7,24 +7,24 @@ namespace ConsoleTest.DIMiddlewareDemo;
 /// Provides demo services for processing and logging, demonstrating the use of 
 /// global log context and middleware pipeline.
 /// </summary>
-class DemoService(ILogger<DemoService> logger)
+internal class DemoService(ILogger<DemoService> logger)
 {
-    private Random random = new();
-    private Faker faker = new();
+    private readonly Random _random = new();
+    private readonly Faker _faker = new();
 
     /// <summary>
     /// Runs the demo service, simulating the processing of multiple batches and products.
     /// </summary>
-    public void Run()
+    public async Task RunAsync()
     {
         logger.LogDebug("Here we go!");
 
         for (int batchCounter = 0; batchCounter < 2; batchCounter++)
         {
             // Generate a unique batch number for each batch
-            var batchNumber = $"BATCH-{faker.Random.Number(1000, 9999)}-{faker.Random.AlphaNumeric(2).ToUpper()}animation-loop";
+            var batchNumber = $"BATCH-{_faker.Random.Number(1000, 9999)}-{_faker.Random.AlphaNumeric(2).ToUpperInvariant()}";
 
-            ProcessBatch(batchNumber: batchNumber);
+            await ProcessBatchAsync(batchNumber).ConfigureAwait(false);
         }
     }
 
@@ -32,7 +32,7 @@ class DemoService(ILogger<DemoService> logger)
     /// Processes a single batch, setting the batch number in the global log context and processing products within the batch.
     /// </summary>
     /// <param name="batchNumber">The unique batch number for this batch.</param>
-    private void ProcessBatch(string batchNumber)
+    private async Task ProcessBatchAsync(string batchNumber)
     {
         // Set the batch number in the global log context so it is included in all log entries for this batch
         CDS.SQLiteLogging.GlobalLogContext.Set(
@@ -42,7 +42,7 @@ class DemoService(ILogger<DemoService> logger)
         for (int productCounter = 0; productCounter < 2; productCounter++)
         {
             // Process each product asynchronously and wait for completion
-            ProcessProduct(productIndex: productCounter + 1).Wait();
+            await ProcessProductAsync(productIndex: productCounter + 1).ConfigureAwait(false);
         }
 
         // Remove the batch number from the global context after processing the batch
@@ -53,15 +53,15 @@ class DemoService(ILogger<DemoService> logger)
     /// Processes a single product by running two tasks in parallel, each simulating work for the product.
     /// </summary>
     /// <param name="productIndex">The index of the product being processed.</param>
-    private async Task ProcessProduct(int productIndex)
+    private async Task ProcessProductAsync(int productIndex)
     {
         logger.LogInformation("Processing product {ProductIndex}", productIndex);
 
         // Start two tasks in parallel for the product
-        var task1 = PerformTaskDemo(productIndex: productIndex, task: 1);
-        var task2 = PerformTaskDemo(productIndex: productIndex, task: 2);
+        var task1 = PerformTaskDemoAsync(productIndex: productIndex, task: 1);
+        var task2 = PerformTaskDemoAsync(productIndex: productIndex, task: 2);
 
-        await Task.WhenAll(task1, task2);
+        await Task.WhenAll(task1, task2).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -69,7 +69,7 @@ class DemoService(ILogger<DemoService> logger)
     /// </summary>
     /// <param name="productIndex">The index of the product.</param>
     /// <param name="task">The task number for this product.</param>
-    private async Task PerformTaskDemo(int productIndex, int task)
+    private async Task PerformTaskDemoAsync(int productIndex, int task)
     {
         // Use a logging scope to group log entries for this task and product
         using var scope = logger.BeginScope("Task {Task} for product {ProductIndex}", task, productIndex);
@@ -79,7 +79,7 @@ class DemoService(ILogger<DemoService> logger)
             logger.LogInformation("Task {Task} for product {ProductIndex} - Step {Step}", task, productIndex, step);
 
             // Simulate some work with a random delay
-            await Task.Delay(random.Next(5, 100));
+            await Task.Delay(_random.Next(5, 100)).ConfigureAwait(false);
         }
     }
 }

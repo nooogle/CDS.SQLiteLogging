@@ -12,7 +12,7 @@ static class Menu
     {
         new CDS.CLIMenus.Basic.MenuBuilder("Demos")
             .AddItem("Database info", () => new DisplayDatabaseInfo().Run())
-            .AddItem("Get all entries", () => new GetAllEntriesDemo().Run())
+            .AddItem("Get all entries", () => new GetAllEntriesDemo().RunAsync().Wait())
             .Build()
             .Run();
     }

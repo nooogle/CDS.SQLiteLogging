@@ -10,7 +10,7 @@ internal class GetAllEntriesDemo
     /// <summary>
     /// Runs the process to retrieve and display all log entries.
     /// </summary>
-    public void Run()
+    public async Task RunAsync()
     {
         // Open the database using SQLiteReader
         using var sqliteReader = new Reader(DBPathCreator.Create());
@@ -20,7 +20,7 @@ internal class GetAllEntriesDemo
         Console.WriteLine($"Number of entries: {numEntries}");
 
         // Retrieve and display all log entries
-        var allEntries = sqliteReader.GetAllEntries();
+        var allEntries = await sqliteReader.GetAllEntriesAsync().ConfigureAwait(false);
         allEntries.ForEach(DisplayLogEntry);
     }
 
