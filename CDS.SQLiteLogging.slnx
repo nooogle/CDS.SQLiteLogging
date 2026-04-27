@@ -21,19 +21,13 @@
     <File Path=".github/workflows/release.yml" />
   </Folder>
   <Project Path="Benchmarking/Benchmarking.csproj">
-    <Build Project="false" />
+    <Build Solution="Debug|*" Project="false" />
   </Project>
   <Project Path="CDS.SQLiteLogging.Tests/CDS.SQLiteLogging.Tests.csproj">
     <Build Solution="Release|*" Project="false" />
   </Project>
-  <Project Path="CDS.SQLiteLogging.Views/CDS.SQLiteLogging.Views.csproj">
-    <Build Solution="Release|*" Project="false" />
-  </Project>
+  <Project Path="CDS.SQLiteLogging.Views/CDS.SQLiteLogging.Views.csproj" />
   <Project Path="CDS.SQLiteLogging/CDS.SQLiteLogging.csproj" />
-  <Project Path="ConsoleTest/ConsoleTest.csproj">
-    <Build Solution="Release|*" Project="false" />
-  </Project>
-  <Project Path="WinFormsTest/WinFormsTest.csproj">
-    <Build Solution="Release|*" Project="false" />
-  </Project>
+  <Project Path="ConsoleTest/ConsoleTest.csproj" />
+  <Project Path="WinFormsTest/WinFormsTest.csproj" />
 </Solution>
