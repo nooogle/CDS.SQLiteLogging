@@ -39,7 +39,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.7" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="System.Collections.Immutable" Version="10.0.6" />
+    <PackageReference Include="System.Collections.Immutable" Version="10.0.7" />
   </ItemGroup>
 
   <!-- Packages specific to .NET Framework 4.8 -->
