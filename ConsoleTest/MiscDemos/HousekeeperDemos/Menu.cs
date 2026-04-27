@@ -1,4 +1,6 @@
-﻿namespace ConsoleTest.HousekeeperDemos;
+﻿using ConsoleTest.HousekeeperDemos;
+
+namespace ConsoleTest.MiscDemos.HousekeeperDemos;
 
 /// <summary>
 /// Menu for running the demos.

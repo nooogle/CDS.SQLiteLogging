@@ -1,4 +1,4 @@
-s# CDS.SQLiteLogging
+# CDS.SQLiteLogging
 
 [![CI](https://github.com/nooogle/CDS.SQLiteLogging/actions/workflows/ci.yml/badge.svg)](https://github.com/nooogle/CDS.SQLiteLogging/actions/workflows/ci.yml)
 [![NuGet Version](https://img.shields.io/nuget/v/CDS.SQLiteLogging)](https://www.nuget.org/packages/CDS.SQLiteLogging)

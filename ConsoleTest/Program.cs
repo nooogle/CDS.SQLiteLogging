@@ -5,8 +5,6 @@
 /// </summary>
 class Program
 {
-
-
     /// <summary>
     /// Runs the main program logic.
     /// </summary>
@@ -16,18 +14,9 @@ class Program
         {
 
             new CDS.CLIMenus.Basic.MenuBuilder("Demos")
-                .AddItem("Simplest demo (dependency injection)", DISimplestDemo.DemoRunner.Run)
-                
-                .AddItem(
-                    "Middleware demo (dependency injection)", 
-                    "Demonstrates using middleware classes to modify log entries before they are written to the database",
-                    DIMiddlewareDemo.DemoRunner.Run)
-
-                .AddItem("Writer demos (dependency injection)", new DIWriterDemos.Menu().Run)
-                .AddItem("Writer demos (non DI)", new NonDIWriterDemos.Menu().Run)
-                .AddItem("Reader demos", ReaderDemos.Menu.Run)
-                .AddItem("Housekeeping demos", HousekeeperDemos.Menu.Run)
-                .AddItem("Export demo", ExportDemo.DemoRunner.Run)
+                .AddItem("Non-DI demos", NonDIDemos.Menu.Run)
+                .AddItem("DI demos", DIDemos.Menu.Run)
+                .AddItem("Misc demo", MiscDemos.Menu.Run)
                 .Build()
                 .Run();
         }
