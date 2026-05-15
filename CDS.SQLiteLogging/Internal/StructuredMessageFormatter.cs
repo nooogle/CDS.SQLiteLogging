@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Collections.Concurrent;
+using System.Globalization;
 using System.Text;
 
 namespace CDS.SQLiteLogging.Internal;
@@ -12,7 +13,7 @@ class StructuredMessageFormatter
     private const string MissingParameterSubstitution = "MissingMsgParam";
 
     // A cache to store parsed templates for fast re-use.
-    private static readonly Dictionary<string, List<TemplateSegment>> TemplateCache = new Dictionary<string, List<TemplateSegment>>();
+    private static readonly ConcurrentDictionary<string, List<TemplateSegment>> TemplateCache = new ConcurrentDictionary<string, List<TemplateSegment>>();
 
     /// <summary>
     /// Formats the provided message template by substituting placeholders with values from the parameters.
@@ -38,12 +39,7 @@ class StructuredMessageFormatter
         var paramDict = parameters.ToDictionary(kv => kv.Key, kv => kv.Value);
 
         // Retrieve the parsed template from the cache if available.
-        List<TemplateSegment>? segments;
-        if (!TemplateCache.TryGetValue(template, out segments))
-        {
-            segments = ParseTemplate(template);
-            TemplateCache[template] = segments;
-        }
+        var segments = TemplateCache.GetOrAdd(template, ParseTemplate);
 
         // Build the formatted string by appending each segment.
         var sb = new StringBuilder();
