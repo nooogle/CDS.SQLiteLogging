@@ -1,201 +1,90 @@
-﻿# CDS.SQLiteLogging
+# CDS.SQLiteLogging
 
-CDS.SQLiteLogging is a logging library for .NET applications that uses SQLite for storing 
-log entries. It supports batch processing, housekeeping, and integrates with 
-the Microsoft.Extensions.Logging framework.
+CDS.SQLiteLogging is a SQLite-backed logging library for .NET applications built on `Microsoft.Extensions.Logging`.
 
-## TODO
+## Supported frameworks
 
-This is a first draft of the readme. It needs to be updated with:
-* Example not using dependency injection.
-* Housekeeping example
-* More discussion of the features and how to use them and how this thing works!
-* Log reader
-* UI log viewer support
-* DB browser tool and SQLite links
-* Any rational for why we are doing this and what the benefits are!
-* Unit tests and the little tick box thing that shows everything is passing!
-* Information about the LogPipeline (see demo in the console app: DIMiddlewareDemo)
-
+- .NET 10 (`net10.0`)
+- .NET 8 (`net8.0`)
+- .NET Framework 4.8 (`net48`)
 
 ## Features
 
-- **Batch Processing**: Efficiently writes log entries in batches to improve performance.
-- **Housekeeping**: Automatically or manually cleans up old log entries based on configurable retention policies.
-- **Flexible Configuration**: Easily configurable options for batching, housekeeping, and logging levels.
-- **Integration with Microsoft.Extensions.Logging**: Seamlessly integrates with the .NET logging framework.
-
+- SQLite-backed log storage with structured properties and scopes
+- `Microsoft.Extensions.Logging` provider for DI-based apps
+- Batching for efficient write throughput
+- Configurable housekeeping (retention period or max entry count)
+- Configurable SQLite PRAGMAs (journal mode / synchronous mode)
 
 ## Installation
 
-You can install the CDS.SQLiteLogging library via NuGet:
+```bash
+dotnet add package CDS.SQLiteLogging
+```
 
-`dotnet add package CDS.SQLiteLogging`
-
-
-## Usage
-
-### Basic Setup for Microsoft Logging and Dependency Injection
-
-To set up the library in a .NET application, follow these steps:
-
-1. **Configure the Logger Provider**:
-
+## Quick start
 
 ```csharp
-using CDS.SQLiteLogging;
 using CDS.SQLiteLogging.MEL;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-// Get the path for the SQLite database file
-string dbPath = GetDatabasePath();
+var dbPath = Path.Combine(
+    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+    "CDS",
+    "SQLiteLogging",
+    "logs.db");
 
-// Create the SQLite logger provider
-var sqliteLoggerProvider = MELLoggerProvider.Create(dbPath);
+using var sqliteLoggerProvider = MELLoggerProvider.Create(dbPath);
 
-// Setup dependency injection
 using var serviceProvider = new ServiceCollection()
     .AddLogging(builder =>
     {
         builder.ClearProviders();
         builder.AddProvider(sqliteLoggerProvider);
-        builder.SetMinimumLevel(LogLevel.Trace);
+        builder.SetMinimumLevel(LogLevel.Information);
     })
-    .AddTransient<DemoService>() // a demo service for this readme!
     .BuildServiceProvider();
+
+var logger = serviceProvider.GetRequiredService<ILoggerFactory>()
+    .CreateLogger("Demo");
+
+logger.LogInformation("Hello from CDS.SQLiteLogging");
 ```
 
-Example database path builder:
+## Configuration overview
 
-```csharp
-private static string GetDatabasePath()
-{
-    return Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        nameof(CDS),
-        nameof(CDS.SQLiteLogging),
-        nameof(ConsoleTest),
-        $"Log_V{MELLogger.DBSchemaVersion}.db");
-}
-```
+### BatchingOptions
 
+- `BatchSize`: max entries written per batch
+- `MaxCacheSize`: max in-memory queued entries
+- `FlushInterval`: periodic flush interval
 
-2. **Using the Logger**:
+### HouseKeepingOptions
 
-```csharp
-using Microsoft.Extensions.Logging;
+- `Mode`: automatic or manual cleanup
+- `RetentionPeriod`: age-based cleanup threshold
+- `CleanupInterval`: cleanup timer interval
+- `MaxEntries`: count-based retention limit
 
-namespace ConsoleTest.DISimplestDemo;
+### DatabaseOptions
 
-/// <summary>
-/// Provides demo services for processing and logging.
-/// </summary>
-/// <remarks>
-/// Initializes a new instance of the <see cref="DemoService"/> class.
-/// </remarks>
-/// <param name="logger">The logger instance.</param>
-class DemoService(ILogger<DemoService> logger)
-{
-    /// <summary>
-    /// Runs the demo service.
-    /// </summary>
-    public void Run()
-    {
-        using var scope = logger.BeginScope("DemoService.Run");
-        logger.LogDebug("Here we go!");
-        DoSomeProcessing();
-    }
+Defaults:
 
-    /// <summary>
-    /// Processes some items and logs the progress.
-    /// </summary>
-    private void DoSomeProcessing()
-    {
-        using var scope = logger.BeginScope("DemoService.DoSomeProcessing");
+- `PRAGMA journal_mode = DELETE`
+- `PRAGMA synchronous = NORMAL`
 
-        for (var i = 0; i < 4; i++)
-        {
-            logger.LogInformation("Processing item {ItemNumber}", i);
-        }
-    }
-}
-```
+Both can be overridden with `DatabaseOptions` when creating the provider.
 
+## Links
 
-### Configuration Options
-
-#### Batching Options
-
-- **BatchSize**: The maximum number of entries to write in a single batch.
-- **MaxCacheSize**: The maximum number of entries to cache. Any items logged when the cache is full will be discarded.
-- **FlushInterval**: The interval in milliseconds between cache flushes.
-
-#### Housekeeping Options
-
-- **Mode**: The housekeeping mode (Automatic or Manual).
-- **RetentionPeriod**: The retention period for log entries.
-- **CleanupInterval**: The interval between cleanup operations.
-
-#### Database Options
-
-By default, the library uses SQLite's native `PRAGMA journal_mode = DELETE` and `PRAGMA synchronous = NORMAL`.
-Both can be overridden by supplying `DatabaseOptions` when creating the provider.
-
-```csharp
-using CDS.SQLiteLogging;
-using CDS.SQLiteLogging.MEL;
-
-// WAL mode with NORMAL synchronous (good general-purpose choice)
-var walProvider = MELLoggerProvider.Create(
-    fileName: dbPath,
-    databaseOptions: new DatabaseOptions
-    {
-        JournalMode = SqliteJournalMode.Wal,
-        SynchronousMode = SqliteSynchronousMode.Normal,
-    });
-
-// In-memory journal with synchronous OFF (maximum write speed, no durability)
-var fastProvider = MELLoggerProvider.Create(
-    fileName: dbPath,
-    databaseOptions: new DatabaseOptions
-    {
-        JournalMode = SqliteJournalMode.Memory,
-        SynchronousMode = SqliteSynchronousMode.Off,
-    });
-```
-
-Supported `SqliteJournalMode` values: `Delete` (default), `Truncate`, `Persist`, `Memory`, `Wal`, `Off`.
-
-Supported `SqliteSynchronousMode` values: `Off`, `Normal` (default), `Full`, `Extra`.
-
-
-
-## API Reference
-
-### Public Classes and Methods
-
-- **SQLiteWriter**: Provides writing capabilities for SQLite logging with caching, batching, and housekeeping.
-- **SQLiteReader**: Provides read-only access to SQLite log entries.
-- **BatchingOptions**: Configuration options for batch processing of log entries.
-- **DatabaseOptions**: Configuration options for SQLite connection behavior.
-- **HouseKeepingOptions**: Configuration options for housekeeping of log entries.
-- **SqliteSynchronousMode**: Supported values for `PRAGMA synchronous`.
-
-## Contributing
-
-We welcome contributions to the CDS.SQLiteLogging library. Please feel free to submit issues and pull requests on GitHub.
+- Source / issues: https://github.com/nooogle/CDS.SQLiteLogging
+- NuGet package: https://www.nuget.org/packages/CDS.SQLiteLogging
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE.txt) file for details.
-
-## Contact
-
-For support or questions, please contact us via GitHub.
-
+MIT — see [LICENSE](https://github.com/nooogle/CDS.SQLiteLogging/blob/master/LICENSE.txt).
 
 ## Attributions
 
 <a href="https://www.flaticon.com/free-icons/log-file" title="log file icons">Log file icons created by Muhammad_Usman - Flaticon</a>
-
