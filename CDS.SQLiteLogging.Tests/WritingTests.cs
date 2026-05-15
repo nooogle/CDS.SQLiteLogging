@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using CDS.SQLiteLogging.Tests.Support;
 using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -95,6 +96,43 @@ public class WritingTests
                 entries[0].Properties.Should().ContainKey("Username").WhoseValue.Should().Be(username);
                 entries[0].Properties.Should().ContainKey("LoginTime").WhoseValue.Should().Be(loginTime);
             });
+    }
+
+    /// <summary>
+    /// Tests that formatting structured messages from multiple threads does not throw
+    /// when templates are added to the formatter cache concurrently.
+    /// </summary>
+    [TestMethod]
+    [TestCategory("Concurrency")]
+    public void Test_StructuredMessageFormatting_IsThreadSafeUnderConcurrentCacheWrites()
+    {
+        const int numberOfTemplates = 200;
+        const int iterationsPerTemplate = 25;
+        var errors = new ConcurrentBag<Exception>();
+
+        Parallel.For(0, numberOfTemplates, templateIndex =>
+        {
+            for (int iteration = 0; iteration < iterationsPerTemplate; iteration++)
+            {
+                try
+                {
+                    var value = (templateIndex * iterationsPerTemplate) + iteration;
+                    var entry = new LogEntry
+                    {
+                        MessageTemplate = $"Template-{templateIndex}-{{Value}}",
+                        Properties = new Dictionary<string, object> { ["Value"] = value }
+                    };
+
+                    _ = entry.GetFormattedMsg();
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(ex);
+                }
+            }
+        });
+
+        errors.Should().BeEmpty();
     }
 
     /// <summary>
