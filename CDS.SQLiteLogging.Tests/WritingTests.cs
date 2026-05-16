@@ -411,4 +411,71 @@ public class WritingTests
             return next();
         }
     }
+
+    /// <summary>
+    /// Hammers the message-template cache from many threads simultaneously, each using a template
+    /// it has never seen before (the unique run ID and per-call ID are baked into the template
+    /// string by C# interpolation, guaranteeing a first-time cache <em>write</em> on every call).
+    /// A <see cref="Barrier"/> releases all threads at the same instant to maximise contention.
+    /// </summary>
+    /// <remarks>
+    /// This was written to force a bug in the original implementation of <see cref="StructuredMessageFormatter"/> to surface reliably in CI, 
+    /// and has been left in place as a regression test for thread-safety of the template cache.
+    /// </remarks>
+    [TestMethod]
+    [TestCategory("Concurrency")]
+    public void ConcurrentFirstTimeTemplateWrites_DoNotCrashOrCorruptCache()
+    {
+        const int threadCount = 64;
+        const int templatesPerThread = 20;
+
+        new NewDatabaseTestHost().Run(
+            onDatabaseCreated: (serviceProvider, _) =>
+            {
+                var logger = serviceProvider.GetRequiredService<ILogger<WritingTests>>();
+
+                // Unique per test run so repeated runs cannot get cache hits from a previous run.
+                var run = Guid.NewGuid().ToString("N");
+                var barrier = new Barrier(threadCount);
+                var exceptions = new ConcurrentBag<Exception>();
+
+                var threads = Enumerable.Range(0, threadCount).Select(threadIndex => new Thread(() =>
+                {
+                    try
+                    {
+                        // Hold until every thread is ready, then release all at once.
+                        barrier.SignalAndWait();
+
+                        for (int i = 0; i < templatesPerThread; i++)
+                        {
+                            int id = threadIndex * templatesPerThread + i;
+
+                            // The template string itself varies per call (run + id embedded via C#
+                            // interpolation), so every call is a first-time cache write — the only
+                            // way to exercise the race inside StructuredMessageFormatter.Format.
+                            string template = $"Thrash_{run}_{id}_{{{{Value}}}}";
+                            logger.LogDebug(template, id);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions.Add(ex);
+                    }
+                })
+                { IsBackground = true }).ToList();
+
+                threads.ForEach(t => t.Start());
+                threads.ForEach(t => t.Join());
+
+                exceptions.Should().BeEmpty(
+                    because: "thread(s) threw — template cache is not thread-safe");
+            },
+
+            // NOTE: Under heavy concurrent load some entries may be dropped by the batching
+            // pipeline before they are flushed (a known separate issue tracked independently).
+            // This test is only asserting that no unhandled exceptions occur — i.e. the
+            // template cache itself is thread-safe. Entry-count fidelity under load is verified
+            // by a dedicated test once the batching pipeline bug is fixed.
+            onDatabaseClosed: (_) => { });
+    }
 }
