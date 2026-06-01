@@ -194,6 +194,52 @@ public class Reader : IDisposable
     }
 
     /// <summary>
+    /// Executes a SQL SELECT statement and projects each row into <typeparamref name="T"/> using <paramref name="map"/>.
+    /// </summary>
+    /// <typeparam name="T">The type to project each row into.</typeparam>
+    /// <param name="sql">The SELECT statement to execute.</param>
+    /// <param name="map">A delegate called once per row to project the <see cref="SqliteDataReader"/> into <typeparamref name="T"/>.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A read-only list of projected results.</returns>
+    public async Task<IReadOnlyList<T>> QueryAsync<T>(
+        string sql,
+        Func<SqliteDataReader, T> map,
+        CancellationToken cancellationToken = default)
+    {
+        var results = new List<T>();
+
+        await connectionManager.ExecuteWithRetryAsync(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            using var cmd = new SqliteCommand(sql, connectionManager.Connection);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                results.Add(map(reader));
+            }
+
+            return Task.CompletedTask;
+        }).ConfigureAwait(false);
+
+        return results.AsReadOnly();
+    }
+
+    /// <summary>
+    /// Executes a SQL SELECT statement and projects each row into <typeparamref name="T"/> using <paramref name="map"/>.
+    /// </summary>
+    /// <typeparam name="T">The type to project each row into.</typeparam>
+    /// <param name="sql">The SELECT statement to execute.</param>
+    /// <param name="map">A delegate called once per row to project the <see cref="SqliteDataReader"/> into <typeparamref name="T"/>.</param>
+    /// <returns>A read-only list of projected results.</returns>
+    /// <remarks>Prefer <see cref="QueryAsync{T}"/> to avoid blocking the calling thread.</remarks>
+    [Obsolete("Use QueryAsync<T>() to avoid blocking the calling thread, especially from UI or async contexts.")]
+    public IReadOnlyList<T> Query<T>(string sql, Func<SqliteDataReader, T> map)
+    {
+        return QueryAsync(sql, map).GetAwaiter().GetResult();
+    }
+
+    /// <summary>
     /// Creates a log entry from the current row in the reader.
     /// </summary>
     /// <param name="reader">A reader that is positioned at the current row.</param>

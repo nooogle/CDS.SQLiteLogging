@@ -141,12 +141,12 @@ internal static class DirectDBExporter
         string tableName,
         SqliteTransaction transaction)
     {
-        var columns = DatabaseSchema.GetInsertableColumns();
+        var columns = DatabaseSchema.GetAllColumns();
         var parameters = columns.Select(col => $"@{col}");
 
-        string insertSql = $@"INSERT INTO {tableName} 
-            ({string.Join(", ", columns)}) 
-            VALUES 
+        string insertSql = $@"INSERT INTO {tableName}
+            ({string.Join(", ", columns)})
+            VALUES
             ({string.Join(", ", parameters)})";
 
         return new SqliteCommand(insertSql, destinationConnectionManager.Connection, transaction);
@@ -161,7 +161,8 @@ internal static class DirectDBExporter
         ColumnOrdinals ordinals)
     {
         insertCmd.Parameters.Clear();
-        
+
+        insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.DbId}", reader.GetInt64(ordinals.DbId));
         insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.Category}", GetValueOrDBNull(reader, ordinals.Category));
         insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.EventId}", reader.GetInt32(ordinals.EventId));
         insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.EventName}", GetValueOrDBNull(reader, ordinals.EventName));
@@ -188,6 +189,7 @@ internal static class DirectDBExporter
     /// </summary>
     private sealed class ColumnOrdinals
     {
+        public readonly int DbId;
         public readonly int Category;
         public readonly int EventId;
         public readonly int EventName;
@@ -202,6 +204,7 @@ internal static class DirectDBExporter
 
         public ColumnOrdinals(SqliteDataReader reader)
         {
+            DbId = reader.GetOrdinal(DatabaseSchema.Columns.DbId);
             Category = reader.GetOrdinal(DatabaseSchema.Columns.Category);
             EventId = reader.GetOrdinal(DatabaseSchema.Columns.EventId);
             EventName = reader.GetOrdinal(DatabaseSchema.Columns.EventName);
