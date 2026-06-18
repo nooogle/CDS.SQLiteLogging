@@ -5,7 +5,7 @@
     <Copyright>Copyright (c) 2025 Carpe Diem Systems</Copyright>
     <!-- MinVer reads the version from the nearest Git tag (e.g. v2.5.0).
          If no tag is found it falls back to MinVerMinimumMajorMinor. -->
-    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerTagPrefix>V</MinVerTagPrefix>
     <MinVerMinimumMajorMinor>2.5</MinVerMinimumMajorMinor>
   </PropertyGroup>
 
