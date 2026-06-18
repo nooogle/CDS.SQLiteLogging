@@ -33,6 +33,7 @@ public class MELLogger : ILogger
     /// <param name="categoryName">The category name for the logger.</param>
     /// <param name="externalSQLiteWriter">The SQLite logger instance. We don't own this instance and mustn't dispose it!</param>
     /// <param name="scopeProvider">The scope provider for managing logging scopes.</param>
+    /// <param name="dateTimeProvider">The date/time provider for timestamping log entries.</param>
     /// <exception cref="ArgumentNullException">Thrown if any required parameter is null.</exception>
     internal MELLogger(string categoryName, Logger externalSQLiteWriter, IExternalScopeProvider scopeProvider, IDateTimeProvider dateTimeProvider)
     {

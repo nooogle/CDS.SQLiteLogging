@@ -36,6 +36,8 @@ public class MELLoggerProvider : ILoggerProvider
     /// <param name="fileName">The name of the SQLite database file.</param>
     /// <param name="batchingOptions">Options for configuring batch processing.</param>
     /// <param name="houseKeepingOptions">Options for configuring housekeeping.</param>
+    /// <param name="databaseOptions">Options for configuring the SQLite database connection.</param>
+    /// <param name="dateTimeProvider">The date/time provider for timestamping log entries.</param>
     /// <param name="logPipeline">Optional log pipeline for processing entries before writing.</param>
     private MELLoggerProvider(
         string fileName,

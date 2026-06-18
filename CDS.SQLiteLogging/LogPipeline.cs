@@ -22,15 +22,9 @@ public class LogPipeline
 
 
     /// <summary>
-    /// Executes the log pipeline with the provided log entry data and a final handler.
+    /// Executes the log pipeline with the provided log entry, passing it through each middleware in order.
     /// </summary>
-    /// <param name="data">
-    /// The log entry data to be processed by the pipeline.
-    /// </param>
-    /// <param name="finalHandler">
-    /// The final handler to be called after all middlewares have processed the log entry.
-    /// </param>
-    /// <returns></returns>
+    /// <param name="data">The log entry to be processed by the pipeline.</param>
     public async Task ExecuteAsync(LogEntry data)
     {
         var enumerator = middlewares.GetEnumerator();
