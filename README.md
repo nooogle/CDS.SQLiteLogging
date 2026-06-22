@@ -180,11 +180,15 @@ Supported `SqliteSynchronousMode` values: `Off`, `Normal` (default), `Full`, `Ex
 
 ### Public Classes and Methods
 
-- **SQLiteWriter**: Provides writing capabilities for SQLite logging with caching, batching, and housekeeping.
-- **SQLiteReader**: Provides read-only access to SQLite log entries.
+- **MELLoggerProvider**: Entry point — factory for the `ILoggerProvider` registered in the DI container.
+- **Reader**: Provides read-only access to SQLite log entries.
+- **Exporter**: Exports selected log entries from one SQLite database to another.
+- **GlobalLogContext**: Static, thread-safe ambient context for attaching properties to all log entries.
+- **Housekeeper**: Timer-driven cleanup supporting time-based (`RetentionPeriod`) and count-based (`MaxEntries`) modes.
 - **BatchingOptions**: Configuration options for batch processing of log entries.
 - **DatabaseOptions**: Configuration options for SQLite connection behavior.
 - **HouseKeepingOptions**: Configuration options for housekeeping of log entries.
+- **SqliteJournalMode**: Supported values for `PRAGMA journal_mode`.
 - **SqliteSynchronousMode**: Supported values for `PRAGMA synchronous`.
 
 ## Contributing
