@@ -219,17 +219,11 @@ public class Housekeeper : IDisposable
     /// <summary>
     /// Deletes entries by their IDs.
     /// </summary>
-    public async Task DeleteByIdsAsync(long[] ids)
+    /// <param name="ids">The database IDs of the entries to delete.</param>
+    public void DeleteByIds(long[] ids)
     {
-        if (disposed)
-        {
-            throw new ObjectDisposedException(nameof(Housekeeper));
-        }
-
-        if (ids == null || ids.Length == 0)
-        {
-            return; // Nothing to delete
-        }
+        if (disposed) throw new ObjectDisposedException(nameof(Housekeeper));
+        if (ids == null || ids.Length == 0) { return; }
 
         // Batch size to avoid exceeding SQLite's parameter limit (default is 999)
         const int batchSize = 500;
@@ -238,11 +232,10 @@ public class Housekeeper : IDisposable
         {
             var batch = ids.Skip(i).Take(batchSize).ToArray();
 
-            await connectionManager.ExecuteInTransactionAsync(async transaction =>
+            connectionManager.ExecuteInTransaction(transaction =>
             {
-                // Build parameterized query
                 var parameterNames = new List<string>(batch.Length);
-                var cmd = new SqliteCommand
+                using var cmd = new SqliteCommand
                 {
                     Connection = connectionManager.Connection,
                     Transaction = transaction
@@ -256,8 +249,20 @@ public class Housekeeper : IDisposable
                 }
 
                 cmd.CommandText = $"DELETE FROM {DatabaseSchema.Tables.LogEntry} WHERE {DatabaseSchema.Columns.DbId} IN ({string.Join(",", parameterNames)})";
-                await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
-            }).ConfigureAwait(false);
+                cmd.ExecuteNonQuery();
+            });
         }
+    }
+
+    /// <summary>
+    /// Deletes entries by their IDs.
+    /// </summary>
+    /// <param name="ids">The database IDs of the entries to delete.</param>
+    /// <returns>A completed task.</returns>
+    [Obsolete("Use DeleteByIds() instead. SQLite has no native async I/O; this wrapper provides no concurrency benefit.")]
+    public Task DeleteByIdsAsync(long[] ids)
+    {
+        DeleteByIds(ids);
+        return Task.CompletedTask;
     }
 }

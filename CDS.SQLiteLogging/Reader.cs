@@ -21,7 +21,7 @@ public class Reader : IDisposable
     /// Initializes a new instance of the <see cref="Reader"/> class.
     /// </summary>
     /// <param name="dbPath">The path to the SQLite database file. This MUST exist!</param>
-    /// <exception cref="FileNotFoundException">Thrown when the database file does not exist.</exception>"
+    /// <exception cref="FileNotFoundException">Thrown when the database file does not exist.</exception>
     public Reader(string dbPath)
     {
         if (!File.Exists(dbPath))
@@ -36,20 +36,17 @@ public class Reader : IDisposable
     /// <summary>
     /// Gets the database file size in bytes.
     /// </summary>
-    public long GetDatabaseFileSize()
-    {
-        return connectionManager.GetDatabaseFileSize();
-    }
+    public long GetDatabaseFileSize() => connectionManager.GetDatabaseFileSize();
 
     /// <summary>
-    /// Reads and returns all log entries from the database asynchronously.
+    /// Reads and returns all log entries from the database.
     /// </summary>
     /// <returns>An immutable list of log entries.</returns>
-    public async Task<ImmutableList<LogEntry>> GetAllEntriesAsync()
+    public ImmutableList<LogEntry> GetAllEntries()
     {
         var entries = ImmutableList.CreateBuilder<LogEntry>();
 
-        await connectionManager.ExecuteWithRetryAsync(() =>
+        connectionManager.ExecuteWithRetry(() =>
         {
             string sql = $"SELECT * FROM {tableName} ORDER BY {Internal.DatabaseSchema.Columns.DbId} DESC;";
             using var cmd = new SqliteCommand(sql, connectionManager.Connection);
@@ -58,31 +55,26 @@ public class Reader : IDisposable
             {
                 entries.Add(CreateLogEntryFromReader(reader));
             }
-
-            return Task.CompletedTask;
-        }).ConfigureAwait(false);
+        });
 
         return entries.ToImmutable();
     }
 
     /// <summary>
-    /// Reads and returns all log entries from the database synchronously.
+    /// Reads and returns all log entries from the database.
     /// </summary>
-    /// <returns>An immutable list of log entries.</returns>
-    /// <remarks>Prefer <see cref="GetAllEntriesAsync"/> to avoid blocking the calling thread.</remarks>
-    [Obsolete("Use GetAllEntriesAsync() to avoid blocking the calling thread, especially from UI or async contexts.")]
-    public ImmutableList<LogEntry> GetAllEntries()
-    {
-        return GetAllEntriesAsync().GetAwaiter().GetResult();
-    }
+    /// <returns>A task whose result is an immutable list of log entries.</returns>
+    [Obsolete("Use GetAllEntries() instead. SQLite has no native async I/O; this wrapper provides no concurrency benefit.")]
+    public Task<ImmutableList<LogEntry>> GetAllEntriesAsync()
+        => Task.FromResult(GetAllEntries());
 
     /// <summary>
-    /// Reads and returns the most recent log entries from the database asynchronously.
+    /// Reads and returns the most recent log entries from the database.
     /// </summary>
     /// <param name="maxCount">The maximum number of entries to return.</param>
     /// <returns>An immutable list of log entries, ordered by timestamp descending.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="maxCount"/> is less than or equal to zero.</exception>
-    public async Task<ImmutableList<LogEntry>> GetRecentEntriesAsync(int maxCount)
+    public ImmutableList<LogEntry> GetRecentEntries(int maxCount)
     {
         if (maxCount <= 0)
         {
@@ -91,7 +83,7 @@ public class Reader : IDisposable
 
         var entries = ImmutableList.CreateBuilder<LogEntry>();
 
-        await connectionManager.ExecuteWithRetryAsync(() =>
+        connectionManager.ExecuteWithRetry(() =>
         {
             string sql = $"SELECT * FROM {tableName} ORDER BY {Internal.DatabaseSchema.Columns.DbId} DESC LIMIT @maxCount;";
             using var cmd = new SqliteCommand(sql, connectionManager.Connection);
@@ -101,24 +93,19 @@ public class Reader : IDisposable
             {
                 entries.Add(CreateLogEntryFromReader(reader));
             }
-
-            return Task.CompletedTask;
-        }).ConfigureAwait(false);
+        });
 
         return entries.ToImmutable();
     }
 
     /// <summary>
-    /// Reads and returns the most recent log entries from the database synchronously.
+    /// Reads and returns the most recent log entries from the database.
     /// </summary>
     /// <param name="maxCount">The maximum number of entries to return.</param>
-    /// <returns>An immutable list of log entries, ordered by timestamp descending.</returns>
-    /// <remarks>Prefer <see cref="GetRecentEntriesAsync"/> to avoid blocking the calling thread.</remarks>
-    [Obsolete("Use GetRecentEntriesAsync() to avoid blocking the calling thread, especially from UI or async contexts.")]
-    public ImmutableList<LogEntry> GetRecentEntries(int maxCount)
-    {
-        return GetRecentEntriesAsync(maxCount).GetAwaiter().GetResult();
-    }
+    /// <returns>A task whose result is an immutable list of log entries, ordered by timestamp descending.</returns>
+    [Obsolete("Use GetRecentEntries() instead. SQLite has no native async I/O; this wrapper provides no concurrency benefit.")]
+    public Task<ImmutableList<LogEntry>> GetRecentEntriesAsync(int maxCount)
+        => Task.FromResult(GetRecentEntries(maxCount));
 
     /// <summary>
     /// Gets the count of log entries in the database.
@@ -131,42 +118,51 @@ public class Reader : IDisposable
     }
 
     /// <summary>
-    /// Reads and returns log entries that contain a specific message parameter asynchronously.
+    /// Reads and returns log entries that contain a specific message parameter.
     /// </summary>
     /// <param name="key">The key of the message parameter to search for.</param>
     /// <param name="value">The value of the message parameter to search for.</param>
     /// <returns>An immutable list of log entries that match the specified message parameter.</returns>
-    public async Task<ImmutableList<LogEntry>> GetEntriesByMessageParamAsync(string key, object value)
+    public ImmutableList<LogEntry> GetEntriesByMessageParam(string key, object value)
     {
         var entries = ImmutableList.CreateBuilder<LogEntry>();
 
-        await connectionManager.ExecuteWithRetryAsync(() =>
+        connectionManager.ExecuteWithRetry(() =>
         {
-            string sql = $"SELECT * FROM {tableName} WHERE json_extract({Internal.DatabaseSchema.Columns.Properties}, '$.{{key}}') = @value;";
+            string sql = $"SELECT * FROM {tableName} WHERE json_extract({Internal.DatabaseSchema.Columns.Properties}, '$.' || @key) = @value;";
             using var cmd = new SqliteCommand(sql, connectionManager.Connection);
+            cmd.Parameters.AddWithValue("@key", key);
             cmd.Parameters.AddWithValue("@value", value);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
                 entries.Add(CreateLogEntryFromReader(reader));
             }
-
-            return Task.CompletedTask;
-        }).ConfigureAwait(false);
+        });
 
         return entries.ToImmutable();
     }
 
     /// <summary>
-    /// Executes a custom SQL select query and returns the resulting log entries asynchronously.
+    /// Reads and returns log entries that contain a specific message parameter.
+    /// </summary>
+    /// <param name="key">The key of the message parameter to search for.</param>
+    /// <param name="value">The value of the message parameter to search for.</param>
+    /// <returns>A task whose result is an immutable list of matching log entries.</returns>
+    [Obsolete("Use GetEntriesByMessageParam() instead. SQLite has no native async I/O; this wrapper provides no concurrency benefit.")]
+    public Task<ImmutableList<LogEntry>> GetEntriesByMessageParamAsync(string key, object value)
+        => Task.FromResult(GetEntriesByMessageParam(key, value));
+
+    /// <summary>
+    /// Executes a custom SQL select query and returns the resulting log entries.
     /// </summary>
     /// <param name="sqlSelect">The SQL select query to execute.</param>
     /// <returns>An enumerable of log entries.</returns>
-    public async Task<IEnumerable<LogEntry>> SelectAsync(string sqlSelect)
+    public IEnumerable<LogEntry> Select(string sqlSelect)
     {
         var entries = ImmutableList.CreateBuilder<LogEntry>();
 
-        await connectionManager.ExecuteWithRetryAsync(() =>
+        connectionManager.ExecuteWithRetry(() =>
         {
             using var cmd = new SqliteCommand(sqlSelect, connectionManager.Connection);
             using var reader = cmd.ExecuteReader();
@@ -174,24 +170,19 @@ public class Reader : IDisposable
             {
                 entries.Add(CreateLogEntryFromReader(reader));
             }
-
-            return Task.CompletedTask;
-        }).ConfigureAwait(false);
+        });
 
         return entries.ToImmutable();
     }
 
     /// <summary>
-    /// Executes a custom SQL select query and returns the resulting log entries synchronously.
+    /// Executes a custom SQL select query and returns the resulting log entries.
     /// </summary>
     /// <param name="sqlSelect">The SQL select query to execute.</param>
-    /// <returns>An enumerable of log entries.</returns>
-    /// <remarks>Prefer <see cref="SelectAsync"/> to avoid blocking the calling thread.</remarks>
-    [Obsolete("Use SelectAsync() to avoid blocking the calling thread, especially from UI or async contexts.")]
-    public IEnumerable<LogEntry> Select(string sqlSelect)
-    {
-        return SelectAsync(sqlSelect).GetAwaiter().GetResult();
-    }
+    /// <returns>A task whose result is an enumerable of log entries.</returns>
+    [Obsolete("Use Select() instead. SQLite has no native async I/O; this wrapper provides no concurrency benefit.")]
+    public Task<IEnumerable<LogEntry>> SelectAsync(string sqlSelect)
+        => Task.FromResult(Select(sqlSelect));
 
     /// <summary>
     /// Executes a SQL SELECT statement and projects each row into <typeparamref name="T"/> using <paramref name="map"/>.
@@ -201,14 +192,14 @@ public class Reader : IDisposable
     /// <param name="map">A delegate called once per row to project the <see cref="SqliteDataReader"/> into <typeparamref name="T"/>.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A read-only list of projected results.</returns>
-    public async Task<IReadOnlyList<T>> QueryAsync<T>(
+    public IReadOnlyList<T> Query<T>(
         string sql,
         Func<SqliteDataReader, T> map,
         CancellationToken cancellationToken = default)
     {
         var results = new List<T>();
 
-        await connectionManager.ExecuteWithRetryAsync(() =>
+        connectionManager.ExecuteWithRetry(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
             using var cmd = new SqliteCommand(sql, connectionManager.Connection);
@@ -218,9 +209,7 @@ public class Reader : IDisposable
                 cancellationToken.ThrowIfCancellationRequested();
                 results.Add(map(reader));
             }
-
-            return Task.CompletedTask;
-        }).ConfigureAwait(false);
+        });
 
         return results.AsReadOnly();
     }
@@ -231,19 +220,15 @@ public class Reader : IDisposable
     /// <typeparam name="T">The type to project each row into.</typeparam>
     /// <param name="sql">The SELECT statement to execute.</param>
     /// <param name="map">A delegate called once per row to project the <see cref="SqliteDataReader"/> into <typeparamref name="T"/>.</param>
-    /// <returns>A read-only list of projected results.</returns>
-    /// <remarks>Prefer <see cref="QueryAsync{T}"/> to avoid blocking the calling thread.</remarks>
-    [Obsolete("Use QueryAsync<T>() to avoid blocking the calling thread, especially from UI or async contexts.")]
-    public IReadOnlyList<T> Query<T>(string sql, Func<SqliteDataReader, T> map)
-    {
-        return QueryAsync(sql, map).GetAwaiter().GetResult();
-    }
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A task whose result is a read-only list of projected results.</returns>
+    [Obsolete("Use Query<T>() instead. SQLite has no native async I/O; this wrapper provides no concurrency benefit.")]
+    public Task<IReadOnlyList<T>> QueryAsync<T>(
+        string sql,
+        Func<SqliteDataReader, T> map,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult(Query(sql, map, cancellationToken));
 
-    /// <summary>
-    /// Creates a log entry from the current row in the reader.
-    /// </summary>
-    /// <param name="reader">A reader that is positioned at the current row.</param>
-    /// <returns>A log entry object.</returns>
     private LogEntry CreateLogEntryFromReader(SqliteDataReader reader)
     {
         var entry = new LogEntry
@@ -285,7 +270,6 @@ public class Reader : IDisposable
         {
             if (disposing)
             {
-                // Dispose the connection manager
                 connectionManager?.Dispose();
             }
             disposed = true;

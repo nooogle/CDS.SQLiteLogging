@@ -17,7 +17,6 @@ class LogWriter
     {
         this.connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
 
-        // Build INSERT command using schema constants
         var columns = DatabaseSchema.GetInsertableColumns();
         var parameters = columns.Select(col => $"@{col}");
 
@@ -30,65 +29,7 @@ class LogWriter
     }
 
     /// <summary>
-    /// Adds a new log entry to the database synchronously.
-    /// </summary>
-    /// <param name="entry">The log entry to add.</param>
-    /// <remarks>Prefer <see cref="AddBatch"/> or <see cref="AddBatchAsync"/> for better throughput.</remarks>
-    [Obsolete("Use AddBatch or AddBatchAsync for better throughput.")]
-    public void Add(LogEntry entry)
-    {
-        if (entry == null) throw new ArgumentNullException(nameof(entry));
-
-        connectionManager.ExecuteInTransaction(transaction =>
-        {
-            using var cmd = new SqliteCommand(sqlInsert, connectionManager.Connection, transaction);
-            AddParametersToCommand(cmd, entry);
-            cmd.ExecuteNonQuery();
-        });
-    }
-
-    /// <summary>
-    /// Adds a new log entry to the database asynchronously.
-    /// </summary>
-    /// <param name="entry">The log entry to add.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task AddAsync(LogEntry entry)
-    {
-        if (entry == null) throw new ArgumentNullException(nameof(entry));
-        await connectionManager.ExecuteInTransactionAsync(transaction =>
-        {
-            using var cmd = new SqliteCommand(sqlInsert, connectionManager.Connection, transaction);
-            AddParametersToCommand(cmd, entry);
-            cmd.ExecuteNonQuery();
-            return Task.CompletedTask;
-        }).ConfigureAwait(false);
-    }
-
-    /// <summary>
     /// Adds multiple log entries to the database in a single transaction.
-    /// </summary>
-    /// <param name="entries">The log entries to add.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task AddBatchAsync(IEnumerable<LogEntry> entries)
-    {
-        if (entries == null) throw new ArgumentNullException(nameof(entries));
-        await connectionManager.ExecuteInTransactionAsync(transaction =>
-        {
-            using var cmd = new SqliteCommand(sqlInsert, connectionManager.Connection, transaction);
-            foreach (var entry in entries)
-            {
-                if (entry == null) throw new ArgumentNullException(nameof(entries), "One of the entries is null.");
-                cmd.Parameters.Clear();
-                AddParametersToCommand(cmd, entry);
-                cmd.ExecuteNonQuery();
-            }
-
-            return Task.CompletedTask;
-        }).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Adds multiple log entries to the database in a single transaction synchronously.
     /// </summary>
     /// <param name="entries">The log entries to add.</param>
     public void AddBatch(IEnumerable<LogEntry> entries)

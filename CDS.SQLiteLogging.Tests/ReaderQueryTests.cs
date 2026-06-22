@@ -6,16 +6,16 @@ using Microsoft.Extensions.Logging;
 namespace CDS.SQLiteLogging.Tests;
 
 /// <summary>
-/// Tests for <see cref="Reader.QueryAsync{T}"/> and its synchronous wrapper.
+/// Tests for <see cref="Reader.Query{T}"/> and its obsolete async wrapper.
 /// </summary>
 [TestClass]
 public class ReaderQueryTests
 {
     /// <summary>
-    /// Tests that QueryAsync returns the correct count when mapping a scalar COUNT(*) result.
+    /// Tests that Query returns the correct count when mapping a scalar COUNT(*) result.
     /// </summary>
     [TestMethod]
-    public void QueryAsync_WithCountStar_ReturnsCorrectCount()
+    public void Query_WithCountStar_ReturnsCorrectCount()
     {
         const int entryCount = 5;
 
@@ -36,7 +36,7 @@ public class ReaderQueryTests
                 string sql = $"SELECT COUNT(*) FROM {Reader.TableName}";
 
                 // Act
-                var results = reader.QueryAsync(sql, r => r.GetInt64(0)).GetAwaiter().GetResult();
+                var results = reader.Query(sql, r => r.GetInt64(0));
 
                 // Assert
                 results.Should().HaveCount(1);
@@ -45,10 +45,10 @@ public class ReaderQueryTests
     }
 
     /// <summary>
-    /// Tests that QueryAsync returns an empty list when the table has no rows matching the query.
+    /// Tests that Query returns an empty list when the table has no rows matching the query.
     /// </summary>
     [TestMethod]
-    public void QueryAsync_WithNoMatchingRows_ReturnsEmptyList()
+    public void Query_WithNoMatchingRows_ReturnsEmptyList()
     {
         new NewDatabaseTestHost().Run(
             onDatabaseCreated: (serviceProvider, dbPath) => { },
@@ -58,17 +58,17 @@ public class ReaderQueryTests
                 using var reader = new Reader(dbPath);
                 string sql = $"SELECT RenderedMessage FROM {Reader.TableName} WHERE 1=0";
 
-                var results = reader.QueryAsync(sql, r => r.GetString(0)).GetAwaiter().GetResult();
+                var results = reader.Query(sql, r => r.GetString(0));
 
                 results.Should().BeEmpty();
             });
     }
 
     /// <summary>
-    /// Tests that QueryAsync maps multiple rows correctly using a custom projection.
+    /// Tests that Query maps multiple rows correctly using a custom projection.
     /// </summary>
     [TestMethod]
-    public void QueryAsync_WithMultipleRows_MapsEachRowViaDelegate()
+    public void Query_WithMultipleRows_MapsEachRowViaDelegate()
     {
         const int entryCount = 3;
 
@@ -87,7 +87,7 @@ public class ReaderQueryTests
                 using var reader = new Reader(dbPath);
                 string sql = $"SELECT RenderedMessage FROM {Reader.TableName}";
 
-                var results = reader.QueryAsync(sql, r => r.GetString(0)).GetAwaiter().GetResult();
+                var results = reader.Query(sql, r => r.GetString(0));
 
                 results.Should().HaveCount(entryCount);
                 results.Should().AllSatisfy(msg => msg.Should().StartWith("Entry "));
@@ -95,10 +95,10 @@ public class ReaderQueryTests
     }
 
     /// <summary>
-    /// Tests that the synchronous Query wrapper returns the same result as QueryAsync.
+    /// Tests that the obsolete QueryAsync wrapper returns the same result as Query.
     /// </summary>
     [TestMethod]
-    public void Query_SyncWrapper_ReturnsSameResultAsAsync()
+    public void QueryAsync_ObsoleteWrapper_ReturnsSameResultAsQuery()
     {
         const int entryCount = 4;
 
@@ -118,7 +118,7 @@ public class ReaderQueryTests
                 string sql = $"SELECT COUNT(*) FROM {Reader.TableName}";
 
 #pragma warning disable CS0618
-                var results = reader.Query(sql, r => r.GetInt64(0));
+                var results = reader.QueryAsync(sql, r => r.GetInt64(0)).GetAwaiter().GetResult();
 #pragma warning restore CS0618
 
                 results.Should().HaveCount(1);
@@ -127,10 +127,10 @@ public class ReaderQueryTests
     }
 
     /// <summary>
-    /// Tests that QueryAsync respects cancellation and throws OperationCanceledException.
+    /// Tests that Query respects cancellation and throws OperationCanceledException.
     /// </summary>
     [TestMethod]
-    public void QueryAsync_WithCancelledToken_ThrowsOperationCanceledException()
+    public void Query_WithCancelledToken_ThrowsOperationCanceledException()
     {
         new NewDatabaseTestHost().Run(
             onDatabaseCreated: (serviceProvider, dbPath) =>
@@ -147,7 +147,7 @@ public class ReaderQueryTests
 
                 string sql = $"SELECT * FROM {Reader.TableName}";
 
-                var act = () => reader.QueryAsync(sql, r => r.GetString(0), cts.Token).GetAwaiter().GetResult();
+                var act = () => reader.Query(sql, r => r.GetString(0), cts.Token);
 
                 act.Should().Throw<OperationCanceledException>();
             });

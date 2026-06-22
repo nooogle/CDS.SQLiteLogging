@@ -143,30 +143,33 @@ class Logger : IDisposable, ISQLiteWriterUtilities
 
 
     /// <inheritdoc />
-    public async Task DeleteByIds(long[] ids)
+    public void DeleteByIds(long[] ids)
     {
-        if (disposed)
-        {
-            throw new ObjectDisposedException(nameof(Logger));
-        }
-
-        await housekeeper.DeleteByIdsAsync(ids);
+        if (disposed) throw new ObjectDisposedException(nameof(Logger));
+        housekeeper.DeleteByIds(ids);
     }
 
-
+    /// <inheritdoc />
+    [Obsolete("Use DeleteByIds() instead. SQLite has no native async I/O; this wrapper provides no concurrency benefit.")]
+    public Task DeleteByIdsAsync(long[] ids)
+    {
+        DeleteByIds(ids);
+        return Task.CompletedTask;
+    }
 
     /// <summary>
     /// Deletes all log entries from the database asynchronously.
     /// </summary>
-    /// <returns>A task representing the asynchronous operation, with the number of entries deleted.</returns>
+    /// <remarks>
+    /// This method does not perform asynchronous I/O. It exists only for compatibility with legacy code.
+    /// Use <see cref="DeleteAll"/> instead.
+    /// </remarks>
+    /// <returns>A task containing the number of entries deleted.</returns>
+    [Obsolete("Use DeleteAll() instead. SQLite has no native async I/O; this wrapper provides no concurrency benefit.")]
     public Task<int> DeleteAllAsync()
     {
-        if (disposed)
-        {
-            throw new ObjectDisposedException(nameof(Logger));
-        }
-
-        return Task.Run(DeleteAll);
+        if (disposed) throw new ObjectDisposedException(nameof(Logger));
+        return Task.FromResult(DeleteAll());
     }
 
     /// <summary>

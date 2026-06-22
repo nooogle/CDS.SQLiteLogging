@@ -171,7 +171,7 @@ public class HousekeepingTests
 
                 var idsToDelete = entries.Take(10).Select(e => e.DbId).ToArray();
                 using var manualHousekeeper = new Housekeeper(dbPath, databaseTestHost.HouseKeepingOptions, new DefaultDateTimeProvider());
-                manualHousekeeper.DeleteByIdsAsync(idsToDelete).GetAwaiter().GetResult();
+                manualHousekeeper.DeleteByIds(idsToDelete);
 
                 var remainingEntries = reader.GetAllEntries();
                 remainingEntries.Should().HaveCount(15);

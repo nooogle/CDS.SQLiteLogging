@@ -590,10 +590,10 @@ public class ExportTests
     }
 
     /// <summary>
-    /// Tests async export method works correctly.
+    /// Tests that the obsolete ExportAsync wrapper calls through correctly.
     /// </summary>
     [TestMethod]
-    public async Task ExportAsync_AsyncMethod_ShouldWork()
+    public void ExportAsync_ObsoleteWrapper_ShouldWork()
     {
         // Arrange
         const int entryCount = 25;
@@ -613,7 +613,9 @@ public class ExportTests
             }
 
             // Act
-            await Exporter.ExportAsync(sourceDbPath, destinationDbPath, allIds);
+#pragma warning disable CS0618
+            Exporter.ExportAsync(sourceDbPath, destinationDbPath, allIds).GetAwaiter().GetResult();
+#pragma warning restore CS0618
 
             // Assert
             using var destReader = new Reader(destinationDbPath);
@@ -628,10 +630,10 @@ public class ExportTests
     }
 
     /// <summary>
-    /// Tests that export can be cancelled via CancellationToken.
+    /// Tests that Export can be cancelled via CancellationToken.
     /// </summary>
     [TestMethod]
-    public async Task ExportAsync_WithCancellation_ShouldThrowOperationCanceledException()
+    public void Export_WithCancellation_ShouldThrowOperationCanceledException()
     {
         // Arrange
         const int entryCount = 1000;
@@ -654,8 +656,8 @@ public class ExportTests
             cts.Cancel(); // Cancel immediately
 
             // Act & Assert
-            Func<Task> act = async () => await Exporter.ExportAsync(sourceDbPath, destinationDbPath, allIds, cts.Token);
-            await act.Should().ThrowAsync<OperationCanceledException>();
+            var act = () => Exporter.Export(sourceDbPath, destinationDbPath, allIds, cts.Token);
+            act.Should().Throw<OperationCanceledException>();
         }
         finally
         {

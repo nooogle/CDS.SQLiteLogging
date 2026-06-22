@@ -160,58 +160,6 @@ class ConnectionManager : IDisposable
     /// <param name="action">The action to execute within a transaction.</param>
     /// <param name="isolationLevel">The transaction isolation level.</param>
     /// <returns>True if the operation completed successfully, false otherwise.</returns>
-    public async Task<bool> ExecuteInTransactionAsync(
-        Func<SqliteTransaction, Task> action,
-        IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
-    {
-        await semaphore.WaitAsync().ConfigureAwait(false);
-        try
-        {
-            int retries = 0;
-            while (retries < 3)
-            {
-                using (var transaction = connection.BeginTransaction(isolationLevel))
-                {
-                    try
-                    {
-                        await action(transaction).ConfigureAwait(false);
-                        transaction.Commit();
-                        return true;
-                    }
-
-
-#if NET6_0_OR_GREATER
-                    catch (SqliteException ex) when ((Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Busy ||
-                                                     (Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Locked)
-#else
-                    catch (SqliteException ex) when (ex.ResultCode == SqliteErrorCode.Busy ||
-                                                     ex.ResultCode == SqliteErrorCode.Locked)
-#endif
-                    {
-                        transaction.Rollback();
-                        retries++;
-                        if (retries >= 3)
-                            throw;
-
-                        await Task.Delay(100 * retries).ConfigureAwait(false);
-                    }
-                }
-            }
-            return false;
-        }
-        finally
-        {
-            semaphore.Release();
-        }
-    }
-
-
-    /// <summary>
-    /// Executes an action within a transaction with retry logic for concurrency issues.
-    /// </summary>
-    /// <param name="action">The action to execute within a transaction.</param>
-    /// <param name="isolationLevel">The transaction isolation level.</param>
-    /// <returns>True if the operation completed successfully, false otherwise.</returns>
     public bool ExecuteInTransaction(
         Action<SqliteTransaction> action,
         IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
@@ -261,9 +209,9 @@ class ConnectionManager : IDisposable
     /// Executes an action with retry logic for concurrency issues.
     /// </summary>
     /// <param name="action">The action to execute.</param>
-    public async Task ExecuteWithRetryAsync(Func<Task> action)
+    public void ExecuteWithRetry(Action action)
     {
-        await semaphore.WaitAsync().ConfigureAwait(false);
+        semaphore.Wait();
         try
         {
             int retries = 0;
@@ -271,7 +219,7 @@ class ConnectionManager : IDisposable
             {
                 try
                 {
-                    await action().ConfigureAwait(false);
+                    action();
                     return;
                 }
 #if NET6_0_OR_GREATER
@@ -279,13 +227,13 @@ class ConnectionManager : IDisposable
                                                  (Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Locked) &&
                                                  retries < 3)
 #else
-                    catch (SqliteException ex) when ((ex.ResultCode == SqliteErrorCode.Busy ||
-                                                     ex.ResultCode == SqliteErrorCode.Locked) &&
-                                                     retries < 3)
+                catch (SqliteException ex) when ((ex.ResultCode == SqliteErrorCode.Busy ||
+                                                 ex.ResultCode == SqliteErrorCode.Locked) &&
+                                                 retries < 3)
 #endif
                 {
                     retries++;
-                    await Task.Delay(100 * retries).ConfigureAwait(false);
+                    Thread.Sleep(100 * retries);
                 }
             }
         }

@@ -1,4 +1,4 @@
-﻿namespace CDS.SQLiteLogging.Internal;
+namespace CDS.SQLiteLogging.Internal;
 
 /// <summary>
 /// Provides high-performance direct database-to-database export functionality for log entries.
@@ -13,61 +13,48 @@ internal static class DirectDBExporter
     /// <param name="sourceConnectionManager">The source database connection manager.</param>
     /// <param name="destinationConnectionManager">The destination database connection manager.</param>
     /// <param name="idsToExport">The array of log entry IDs to export.</param>
-    /// <param name="cancellationToken">Cancellation token for long-running operations.</param>
-    /// <returns>A task representing the asynchronous export operation. The completed task result is the number of exported rows.</returns>
+    /// <param name="cancellationToken">Cancellation token checked between batches.</param>
+    /// <returns>The number of exported rows.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any connection manager is null.</exception>
     /// <exception cref="ArgumentException">Thrown when the IDs array is null or empty.</exception>
-    public static async Task<int> ExportAsync(
+    public static int Export(
         ConnectionManager sourceConnectionManager,
         ConnectionManager destinationConnectionManager,
         long[] idsToExport,
         CancellationToken cancellationToken = default)
     {
-        if (sourceConnectionManager == null)
-        {
-            throw new ArgumentNullException(nameof(sourceConnectionManager));
-        }
-
-        if (destinationConnectionManager == null)
-        {
-            throw new ArgumentNullException(nameof(destinationConnectionManager));
-        }
-
-        if (idsToExport == null)
-        {
-            throw new ArgumentException("Value cannot be null or empty.", nameof(idsToExport));
-        }
+        if (sourceConnectionManager == null) throw new ArgumentNullException(nameof(sourceConnectionManager));
+        if (destinationConnectionManager == null) throw new ArgumentNullException(nameof(destinationConnectionManager));
+        if (idsToExport == null || idsToExport.Length == 0) throw new ArgumentException("Value cannot be null or empty.", nameof(idsToExport));
 
         var tableCreator = new TableCreator(destinationConnectionManager);
         string tableName = tableCreator.CreateTableForLogEntry();
-        var exportedRowCount = 0;
+        int exportedRowCount = 0;
 
         for (int i = 0; i < idsToExport.Length; i += BatchSize)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            
+
             int batchLength = Math.Min(BatchSize, idsToExport.Length - i);
-            exportedRowCount += await ExportBatchAsync(
-                sourceConnectionManager, 
-                destinationConnectionManager, 
-                tableName, 
+            exportedRowCount += ExportBatch(
+                sourceConnectionManager,
+                destinationConnectionManager,
+                tableName,
                 idsToExport,
                 i,
                 batchLength,
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken);
         }
 
         return exportedRowCount;
     }
 
     /// <summary>
-    /// Exports a batch of log entries.
+    /// Exports a single batch of log entries from source to destination.
     /// Microsoft.Data.Sqlite is synchronous — all SQLite calls are made directly
-    /// without per-call <c>Task.Run</c> wrappers. The semaphore in
-    /// <see cref="ConnectionManager.ExecuteInTransactionAsync"/> ensures the work
-    /// already runs off the UI thread.
+    /// without per-call Task wrappers.
     /// </summary>
-    private static async Task<int> ExportBatchAsync(
+    private static int ExportBatch(
         ConnectionManager sourceConnectionManager,
         ConnectionManager destinationConnectionManager,
         string tableName,
@@ -76,9 +63,9 @@ internal static class DirectDBExporter
         int batchLength,
         CancellationToken cancellationToken)
     {
-        var exportedRowCount = 0;
+        int exportedRowCount = 0;
 
-        await destinationConnectionManager.ExecuteInTransactionAsync(transaction =>
+        destinationConnectionManager.ExecuteInTransaction(transaction =>
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -87,10 +74,9 @@ internal static class DirectDBExporter
 
             if (!reader.HasRows)
             {
-                return Task.CompletedTask;
+                return;
             }
 
-            // Cache column ordinals for performance
             var columnOrdinals = new ColumnOrdinals(reader);
 
             using var insertCmd = BuildInsertCommand(destinationConnectionManager, tableName, transaction);
@@ -102,16 +88,11 @@ internal static class DirectDBExporter
                 insertCmd.ExecuteNonQuery();
                 exportedRowCount++;
             }
-
-            return Task.CompletedTask;
-        }).ConfigureAwait(false);
+        });
 
         return exportedRowCount;
     }
 
-    /// <summary>
-    /// Builds the SELECT command with parameterized IDs.
-    /// </summary>
     private static SqliteCommand BuildSelectCommand(
         ConnectionManager sourceConnectionManager,
         string tableName,
@@ -120,7 +101,7 @@ internal static class DirectDBExporter
         int batchLength)
     {
         var cmd = new SqliteCommand { Connection = sourceConnectionManager.Connection };
-        
+
         var parameterNames = new List<string>(batchLength);
         for (int i = 0; i < batchLength; i++)
         {
@@ -133,9 +114,6 @@ internal static class DirectDBExporter
         return cmd;
     }
 
-    /// <summary>
-    /// Builds the INSERT command for the destination database.
-    /// </summary>
     private static SqliteCommand BuildInsertCommand(
         ConnectionManager destinationConnectionManager,
         string tableName,
@@ -152,9 +130,6 @@ internal static class DirectDBExporter
         return new SqliteCommand(insertSql, destinationConnectionManager.Connection, transaction);
     }
 
-    /// <summary>
-    /// Populates the INSERT command with data from the reader.
-    /// </summary>
     private static void PopulateInsertCommand(
         SqliteCommand insertCmd,
         SqliteDataReader reader,
@@ -176,13 +151,8 @@ internal static class DirectDBExporter
         insertCmd.Parameters.AddWithValue($"@{DatabaseSchema.Columns.ScopesJson}", GetValueOrDBNull(reader, ordinals.ScopesJson));
     }
 
-    /// <summary>
-    /// Gets the string value from the reader or DBNull if the value is null.
-    /// </summary>
     private static object GetValueOrDBNull(SqliteDataReader reader, int ordinal)
-    {
-        return reader.IsDBNull(ordinal) ? DBNull.Value : reader.GetString(ordinal);
-    }
+        => reader.IsDBNull(ordinal) ? DBNull.Value : reader.GetString(ordinal);
 
     /// <summary>
     /// Caches column ordinals for efficient data access.
