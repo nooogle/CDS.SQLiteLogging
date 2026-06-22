@@ -1,4 +1,4 @@
-﻿using CDS.SQLiteLogging;
+using CDS.SQLiteLogging;
 using CDS.SQLiteLogging.MEL;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -6,43 +6,27 @@ using Microsoft.Extensions.Logging;
 namespace ConsoleTest.DIWriterDemos;
 
 /// <summary>
-/// Menu for running the demos.
+/// Menu for the assorted writer demos. Owns the DI service provider and
+/// rebuilds it when batching or housekeeping options change.
 /// </summary>
 class Menu
 {
-    /// <summary>
-    /// Configuration options for batch processing of log entries.
-    /// </summary>
     private BatchingOptions batchingOptions = new BatchingOptions();
-
-    /// <summary>
-    /// Configuration options for housekeeping of log entries.
-    /// </summary>
     private HouseKeepingOptions houseKeepingOptions = new HouseKeepingOptions();
-
-    /// <summary>
-    /// Service provider for dependency injection.
-    /// </summary>
     private ServiceProvider? serviceProvider;
 
-    /// <summary>
-    /// Recreates the service provider with updated configurations.
-    /// </summary>
     private void RecreateServiceProvider()
     {
         serviceProvider?.Dispose();
 
-        // Create the SQLite logger provider
         var sqliteLoggerProvider = MELLoggerProvider.Create(
             DBPathCreator.Create(),
             databaseOptions: new DatabaseOptions { JournalMode = SqliteJournalMode.Memory, SynchronousMode = SqliteSynchronousMode.Off },
             batchingOptions,
             houseKeepingOptions);
 
-        // Get the logger utilities - we want to make these available to the demo classes
         var loggerUtilities = sqliteLoggerProvider.LoggerUtilities;
 
-        // Setup dependency injection
         serviceProvider = new ServiceCollection()
             .AddLogging(builder =>
             {
@@ -50,64 +34,41 @@ class Menu
                 builder.AddProvider(sqliteLoggerProvider);
                 builder.SetMinimumLevel(LogLevel.Trace);
             })
-
-            // Add SQLiteWriterUtilities
             .AddSingleton(loggerUtilities)
-
-            // Add demo classes
             .AddTransient<LogLevelsDemo>()
             .AddTransient<ScopeDemo.Factory>()
             .AddTransient<BurstLogEntriesTest>()
             .AddTransient<LoggerSoakTest>()
-
-            // Build the service provider
             .BuildServiceProvider();
     }
 
     /// <summary>
-    /// Runs the main program logic.
+    /// Runs the writer demos sub-menu.
     /// </summary>
     public void Run()
     {
         RecreateServiceProvider();
 
-        if (serviceProvider == null)
-        {
-            Console.WriteLine("Failed to create service provider.");
-            return;
-        }
+        SpectreMenu.Run("Assorted Writer Demos",
+            ("Log levels", () => serviceProvider!.GetRequiredService<LogLevelsDemo>().Run()),
+            ("Scope demos", () => serviceProvider!.GetRequiredService<ScopeDemo.Factory>().Run()),
+            ("Burst log entries", () => serviceProvider!.GetRequiredService<BurstLogEntriesTest>().Run()),
+            ("Soak test", () => serviceProvider!.GetRequiredService<LoggerSoakTest>().Run()),
+            ("Customise batching options", CustomiseBatchingOptions),
+            ("Customise housekeeping options", CustomiseHouseKeepingOptions));
 
-        new CDS.CLIMenus.Basic.MenuBuilder("Demos")
-            .AddItem("Log levels", () => serviceProvider.GetRequiredService<LogLevelsDemo>().Run())
-            .AddItem("Scope demos", () => serviceProvider.GetRequiredService<ScopeDemo.Factory>().Run())
-            .AddItem("Burst log entries", () => serviceProvider.GetRequiredService<BurstLogEntriesTest>().Run())
-            .AddItem("Soak test", () => serviceProvider.GetRequiredService<LoggerSoakTest>().Run())
-            .AddItem("Customise batching options", CustomiseBatchingOptions)
-            .AddItem("Customise housekeeping options", CustomiseHouseKeepingOptions)
-            .Build()
-            .Run();
+        serviceProvider!.GetRequiredService<ISQLiteWriterUtilities>()
+            .WaitUntilCacheIsEmpty(TimeSpan.FromSeconds(5));
 
-        // cleanup - we wait for the cache to empty before disposing the service provider,
-        // just in case there are any pending log entries
-        var loggerUtilities = serviceProvider.GetRequiredService<ISQLiteWriterUtilities>();
-        loggerUtilities.WaitUntilCacheIsEmpty(TimeSpan.FromSeconds(5));
-
-        // all done
         serviceProvider?.Dispose();
     }
 
-    /// <summary>
-    /// Customizes the batching options and recreates the service provider.
-    /// </summary>
     private void CustomiseBatchingOptions()
     {
         batchingOptions = CustomOptionsEditor.GetBatchingOptions(batchingOptions);
         RecreateServiceProvider();
     }
 
-    /// <summary>
-    /// Customizes the housekeeping options and recreates the service provider.
-    /// </summary>
     private void CustomiseHouseKeepingOptions()
     {
         houseKeepingOptions = CustomOptionsEditor.GetHouseKeepingOptions(houseKeepingOptions);

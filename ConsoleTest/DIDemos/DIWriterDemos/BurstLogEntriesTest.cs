@@ -1,96 +1,78 @@
 using CDS.SQLiteLogging;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Spectre.Console;
 using System.Diagnostics;
 
 namespace ConsoleTest.DIWriterDemos;
 
 /// <summary>
-/// Contains a test for adding a burst of log entries.
+/// Writes a configurable burst of log entries and reports throughput.
 /// </summary>
-/// <remarks>
-/// Initialises a new instance of the <see cref="BurstLogEntriesTest"/> class.
-/// </remarks>
-/// <param name="logger">
-/// A logger, provided by the dependency injection container.
-/// </param>
 class BurstLogEntriesTest(ILogger<BurstLogEntriesTest> logger, ISQLiteWriterUtilities loggerUtilities)
 {
-    /// <summary>
-    /// A logger, provided by the dependency injection container.
-    /// </summary>
     private readonly ILogger<BurstLogEntriesTest> logger = logger;
-
-
-    /// <summary>
-    /// Logger utilities, provided by the dependency injection container.
-    /// </summary>
     private readonly ISQLiteWriterUtilities loggerUtilities = loggerUtilities;
 
-
     /// <summary>
-    /// Runs a test of adding a burst of log entries.
+    /// Runs the burst test.
     /// </summary>
     public void Run()
     {
-        Console.Clear();
-        Console.WriteLine("=== Burst Log Entries Test ===\n");
+        AnsiConsole.Write(new Rule("[bold yellow]Burst Log Entries Test[/]").LeftJustified());
 
-        // Prompt user for the number of log entries
-        Console.Write("Enter the number of log entries to add: ");
-        if (!int.TryParse(Console.ReadLine(), out int numberOfEntries) || numberOfEntries <= 0)
-        {
-            Console.WriteLine("Invalid number of entries.");
-            return;
-        }
+        var numberOfEntries = AnsiConsole.Prompt(
+            new TextPrompt<int>("Number of log entries to add:")
+                .DefaultValue(10_000)
+                .Validate(v => v > 0
+                    ? ValidationResult.Success()
+                    : ValidationResult.Error("[red]Must be > 0[/]")));
 
-        // Start timing the process
         var stopwatch = Stopwatch.StartNew();
         int addedCount = 0;
-        bool quit = false;
 
-        Console.WriteLine("Press 'q' to quit.");
-
-        for (int i = 1; i <= numberOfEntries && !quit; i++)
-        {
-            if (Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Q)
+        AnsiConsole.Progress()
+            .AutoClear(false)
+            .HideCompleted(false)
+            .Columns(
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new RemainingTimeColumn(),
+                new SpinnerColumn())
+            .Start(ctx =>
             {
-                quit = true;
-                break;
-            }
+                var task = ctx.AddTask("[green]Writing log entries[/]", maxValue: numberOfEntries);
 
-            logger.LogInformation(
-                "Image with illumination {illumination} has result {result}",
-                [MsgParamsGen.GetIllumination(), MsgParamsGen.GetResult()]);
+                for (int i = 0; i < numberOfEntries; i++)
+                {
+                    logger.LogInformation(
+                        "Image with illumination {illumination} has result {result}",
+                        MsgParamsGen.GetIllumination(), MsgParamsGen.GetResult());
 
+                    addedCount++;
+                    task.Increment(1);
+                }
+            });
 
-            addedCount++;
-
-            // Provide feedback every 1000 entries
-            if (i % 1000 == 0)
-            {
-                double rate = addedCount / stopwatch.Elapsed.TotalSeconds;
-                double eta = (numberOfEntries - addedCount) / rate;
-                Console.WriteLine($"Added {addedCount}/{numberOfEntries} entries. Rate: {rate:F2} entries/sec. ETA: {eta:F2} sec.");
-            }
-        }
-
-        // Stop timing
         stopwatch.Stop();
 
-        // Notify user that flush is starting
-        Console.WriteLine("Waiting for any cached entries to be flusehed to the database...");
-
-        // Measure flush duration
-        var flushStopwatch = Stopwatch.StartNew();
+        AnsiConsole.MarkupLine("[grey]Flushing cached entries to database...[/]");
+        var flushSw = Stopwatch.StartNew();
         loggerUtilities.WaitUntilCacheIsEmpty(timeout: TimeSpan.FromSeconds(10));
-        flushStopwatch.Stop();
+        flushSw.Stop();
 
-        // Report flush duration
-        Console.WriteLine($"Flush completed in {flushStopwatch.Elapsed.TotalSeconds:F2} seconds.");
+        var resultsTable = new Table()
+            .AddColumn("Metric")
+            .AddColumn(new TableColumn("Value").RightAligned())
+            .Border(TableBorder.Rounded);
 
-        // Report stats
-        Console.WriteLine($"\nTest completed. Added {addedCount} entries in {stopwatch.Elapsed.TotalSeconds:F2} seconds.");
-        Console.WriteLine($"Average rate: {addedCount / stopwatch.Elapsed.TotalSeconds:F2} entries/sec.");
+        resultsTable.AddRow("Entries added", $"{addedCount:N0}");
+        resultsTable.AddRow("Write time", $"{stopwatch.Elapsed.TotalSeconds:F2} s");
+        resultsTable.AddRow("Flush time", $"{flushSw.Elapsed.TotalSeconds:F2} s");
+        resultsTable.AddRow("Average rate", $"{addedCount / stopwatch.Elapsed.TotalSeconds:N0} entries/sec");
+
+        AnsiConsole.Write(new Panel(resultsTable)
+            .Header("[yellow]Results[/]")
+            .Border(BoxBorder.Rounded));
     }
 }

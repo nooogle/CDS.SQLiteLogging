@@ -1,5 +1,6 @@
-﻿namespace ConsoleTest.HousekeeperDemos;
+using Spectre.Console;
 
+namespace ConsoleTest.HousekeeperDemos;
 
 /// <summary>
 /// Deletes all log entries from the database.
@@ -11,17 +12,25 @@ internal class DeleteAllDemo
     /// </summary>
     public void Run()
     {
-        // create the housekeeping options
+        AnsiConsole.Write(new Rule("[bold yellow]Delete All Log Entries[/]").LeftJustified());
+
         CDS.SQLiteLogging.HouseKeepingOptions options = new()
         {
             Mode = CDS.SQLiteLogging.HousekeepingMode.Manual,
         };
 
-        // create the housekeeper
-        using var housekeeper = new CDS.SQLiteLogging.Housekeeper(DBPathCreator.Create(), options, new CDS.SQLiteLogging.DefaultDateTimeProvider());
+        using var housekeeper = new CDS.SQLiteLogging.Housekeeper(
+            DBPathCreator.Create(), options, new CDS.SQLiteLogging.DefaultDateTimeProvider());
 
-        // delete all log entries
-        int numberOfRecordsDeleted = housekeeper.DeleteAll();
-        Console.WriteLine($"{numberOfRecordsDeleted} records deleted.");
+        int deleted = housekeeper.DeleteAll();
+
+        if (deleted == 0)
+        {
+            AnsiConsole.MarkupLine("[grey]No entries to delete.[/]");
+        }
+        else
+        {
+            AnsiConsole.MarkupLine($"[green]{deleted:N0}[/] record(s) deleted.");
+        }
     }
 }

@@ -1,19 +1,17 @@
-﻿namespace ConsoleTest.ReaderDemos;
+namespace ConsoleTest.ReaderDemos;
 
 /// <summary>
-/// Menu for running the demos.
+/// Menu for reader demos.
 /// </summary>
 static class Menu
 {
     /// <summary>
-    /// Runs the main program logic.
+    /// Runs the reader demos sub-menu.
     /// </summary>
     public static void Run()
     {
-        new CDS.CLIMenus.Basic.MenuBuilder("Demos")
-            .AddItem("Database info", () => new DisplayDatabaseInfo().Run())
-            .AddItem("Get all entries", () => new GetAllEntriesDemo().RunAsync().Wait())
-            .Build()
-            .Run();
+        SpectreMenu.Run("Reader Demos",
+            ("Database info", () => new DisplayDatabaseInfo().Run()),
+            ("Get all entries", () => new GetAllEntriesDemo().Run()));
     }
 }

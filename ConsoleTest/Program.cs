@@ -1,35 +1,34 @@
-﻿namespace ConsoleTest;
+using Spectre.Console;
+
+namespace ConsoleTest;
 
 /// <summary>
 /// Main program class.
 /// </summary>
 class Program
 {
-    /// <summary>
-    /// Runs the main program logic.
-    /// </summary>
     void Run()
     {
+        AnsiConsole.Write(
+            new FigletText("CDS SQLiteLogging")
+                .LeftJustified()
+                .Color(Color.Yellow));
+
+        AnsiConsole.MarkupLine("[grey]Interactive demos for the CDS.SQLiteLogging library[/]");
+
         try
         {
-
-            new CDS.CLIMenus.Basic.MenuBuilder("Demos")
-                .AddItem("Non-DI demos", NonDIDemos.Menu.Run)
-                .AddItem("DI demos", DIDemos.Menu.Run)
-                .AddItem("Misc demo", MiscDemos.Menu.Run)
-                .Build()
-                .Run();
+            SpectreMenu.RunRoot("Main Menu",
+                ("Non-DI demos", NonDIDemos.Menu.Run),
+                ("DI demos", DIDemos.Menu.Run),
+                ("Misc demos", MiscDemos.Menu.Run));
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"An error occurred: {ex.Message}");
+            AnsiConsole.WriteException(ex);
         }
     }
 
-
-    /// <summary>
-    /// Entry point of the program.
-    /// </summary>
     static void Main()
     {
         new Program().Run();

@@ -93,7 +93,7 @@
             reader = null;
         }
 
-        private async void btnDeleteSelected_Click(object sender, EventArgs e)
+        private void btnDeleteSelected_Click(object sender, EventArgs e)
         {
             var selectedEntries = simpleLogView.GetSelectedLogIDs();
 
@@ -107,7 +107,7 @@
                 options: houseKingOptions,
                 dateTimeProvider: new CDS.SQLiteLogging.DefaultDateTimeProvider());
 
-            await housekeeper.DeleteByIdsAsync(selectedEntries);
+            housekeeper.DeleteByIds(selectedEntries);
 
             ReselectData();
         }

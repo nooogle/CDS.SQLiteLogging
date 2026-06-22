@@ -1,131 +1,142 @@
-﻿using CDS.SQLiteLogging;
-using Microsoft.Extensions.Logging;
+using CDS.SQLiteLogging;
+using Spectre.Console;
 
 namespace ConsoleTest.ExportDemo;
 
 /// <summary>
 /// Demonstrates exporting log entries from one SQLite database to another.
-/// This demo reads log entries from an existing database and exports every other entry to a new database file.
+/// Reads all entries from the live database and exports every other one to a new file.
 /// </summary>
 internal static class DemoRunner
 {
     /// <summary>
-    /// Runs the export demo asynchronously.
-    /// </summary>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    /// <exception cref="FileNotFoundException">Thrown when the source database file does not exist.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when no log entries are found in the source database.</exception>
-    public static async Task RunAsync()
-    {
-        try
-        {
-            Console.Clear();
-            Console.WriteLine("=== SQLite Log Export Demo ===\n");
-
-            // Step 1: Get source database path
-            string dbPath = DBPathCreator.Create();
-            Console.WriteLine($"Source database: {dbPath}");
-
-            // Validate source database exists
-            if (!File.Exists(dbPath))
-            {
-                throw new FileNotFoundException($"Source database file not found: {dbPath}");
-            }
-
-            // Step 2: Create export destination path
-            string exportPath = Path.Combine(
-                Path.GetDirectoryName(dbPath) ?? string.Empty,
-                "ExportedLog.db");
-            Console.WriteLine($"Destination database: {exportPath}\n");
-
-            // Delete existing export file if it exists
-            if (File.Exists(exportPath))
-            {
-                Console.WriteLine("Deleting existing export database...");
-                File.Delete(exportPath);
-            }
-
-            // Step 3: Read all entries from source database
-            Console.WriteLine("Reading log entries from source database...");
-            using var reader = new Reader(dbPath);
-            IList<LogEntry> allEntries = await reader.GetAllEntriesAsync().ConfigureAwait(false);
-
-            if (allEntries.Count == 0)
-            {
-                throw new InvalidOperationException("No log entries found in the source database.");
-            }
-
-            Console.WriteLine($"Found {allEntries.Count:N0} log entries in source database.");
-
-            // Step 4: Select every other entry to export (demonstrating filtering)
-            long[] everyOtherDbId = allEntries
-                .Where((entry, index) => index % 2 == 0)
-                .Select(entry => entry.DbId)
-                .ToArray();
-
-            Console.WriteLine($"Exporting {everyOtherDbId.Length:N0} entries (every other entry)...\n");
-
-            // Step 5: Perform the export
-            var startTime = DateTime.Now;
-            await Exporter.ExportAsync(
-                dbFileNameSource: dbPath,
-                dbFileNameDestination: exportPath,
-                idsToExport: everyOtherDbId).ConfigureAwait(false);
-
-            var duration = DateTime.Now - startTime;
-
-            // Step 6: Verify export success
-            Console.WriteLine($"Export completed in {duration.TotalSeconds:F2} seconds.\n");
-            
-            using var exportedReader = new Reader(exportPath);
-            int exportedCount = exportedReader.GetEntryCount();
-            
-            Console.WriteLine($"Verification:");
-            Console.WriteLine($"  - Expected entries: {everyOtherDbId.Length:N0}");
-            Console.WriteLine($"  - Actual entries:   {exportedCount:N0}");
-            Console.WriteLine($"  - Status: {(exportedCount == everyOtherDbId.Length ? "SUCCESS ✓" : "FAILED ✗")}");
-
-            // Step 7: Display sample entries from export
-            Console.WriteLine("\nSample of exported entries:");
-            var sampleEntries = await exportedReader.GetRecentEntriesAsync(5).ConfigureAwait(false);
-            foreach (var entry in sampleEntries)
-            {
-                Console.WriteLine($"  [{entry.Level}] {entry.Timestamp:yyyy-MM-dd HH:mm:ss} - {entry.RenderedMessage}");
-            }
-
-            Console.WriteLine($"\nExport file location: {exportPath}");
-        }
-        catch (FileNotFoundException ex)
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"\nError: {ex.Message}");
-            Console.WriteLine("Please ensure the source database exists before running this demo.");
-            Console.ResetColor();
-            throw;
-        }
-        catch (InvalidOperationException ex)
-        {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"\nWarning: {ex.Message}");
-            Console.WriteLine("Please run a logging demo first to generate log entries.");
-            Console.ResetColor();
-            throw;
-        }
-        catch (Exception ex)
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"\nUnexpected error during export: {ex.Message}");
-            Console.WriteLine($"Stack trace: {ex.StackTrace}");
-            Console.ResetColor();
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// Runs the export demo synchronously (wrapper for backward compatibility).
+    /// Runs the export demo.
     /// </summary>
     public static void Run()
     {
-        RunAsync().GetAwaiter().GetResult();
+        AnsiConsole.Write(new Rule("[bold yellow]SQLite Log Export Demo[/]").LeftJustified());
+
+        string dbPath = DBPathCreator.Create();
+
+        if (!File.Exists(dbPath))
+        {
+            AnsiConsole.MarkupLine($"[red]Source database not found:[/] [grey]{Markup.Escape(dbPath)}[/]");
+            AnsiConsole.MarkupLine("[grey]Run a logging demo first to generate log entries.[/]");
+            return;
+        }
+
+        string exportPath = Path.Combine(
+            Path.GetDirectoryName(dbPath) ?? string.Empty,
+            "ExportedLog.db");
+
+        var infoGrid = new Grid().AddColumn(new GridColumn().NoWrap()).AddColumn();
+        infoGrid.AddRow("[bold]Source:[/]", Markup.Escape(dbPath));
+        infoGrid.AddRow("[bold]Destination:[/]", Markup.Escape(exportPath));
+        AnsiConsole.Write(new Panel(infoGrid).Border(BoxBorder.Rounded));
+
+        if (File.Exists(exportPath)) { File.Delete(exportPath); }
+
+        try
+        {
+            // Read source entries
+            long[] everyOtherDbId = [];
+            int totalSourceCount = 0;
+
+            AnsiConsole.Status().Start("Reading source database...", _ =>
+            {
+                using var reader = new Reader(dbPath);
+                var allEntries = reader.GetAllEntries();
+                totalSourceCount = allEntries.Count;
+                everyOtherDbId = allEntries
+                    .Where((_, index) => index % 2 == 0)
+                    .Select(e => e.DbId)
+                    .ToArray();
+            });
+
+            if (totalSourceCount == 0)
+            {
+                AnsiConsole.MarkupLine("[yellow]No log entries found in the source database.[/]");
+                AnsiConsole.MarkupLine("[grey]Run a logging demo first to generate log entries.[/]");
+                return;
+            }
+
+            AnsiConsole.MarkupLine($"Found [bold]{totalSourceCount:N0}[/] entries — exporting every other one ([bold]{everyOtherDbId.Length:N0}[/] total).");
+
+            // Export
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            AnsiConsole.Status().Start("Exporting...", _ =>
+            {
+                Exporter.Export(
+                    dbFileNameSource: dbPath,
+                    dbFileNameDestination: exportPath,
+                    idsToExport: everyOtherDbId);
+            });
+            sw.Stop();
+
+            // Verify
+            int exportedCount;
+            IReadOnlyList<LogEntry> sample = [];
+
+            using (var exportedReader = new Reader(exportPath))
+            {
+                exportedCount = exportedReader.GetEntryCount();
+                sample = exportedReader.GetRecentEntries(5);
+            }
+
+            bool success = exportedCount == everyOtherDbId.Length;
+
+            // Summary panel
+            var summaryGrid = new Grid().AddColumn(new GridColumn().NoWrap()).AddColumn();
+            summaryGrid.AddRow("[bold]Expected entries:[/]", $"{everyOtherDbId.Length:N0}");
+            summaryGrid.AddRow("[bold]Actual entries:[/]", $"{exportedCount:N0}");
+            summaryGrid.AddRow("[bold]Duration:[/]", $"{sw.Elapsed.TotalSeconds:F2} s");
+            summaryGrid.AddRow(
+                "[bold]Status:[/]",
+                success ? "[green]SUCCESS ✓[/]" : "[red]FAILED ✗[/]");
+
+            AnsiConsole.Write(new Panel(summaryGrid)
+                .Header("[yellow]Export Summary[/]")
+                .Border(BoxBorder.Rounded));
+
+            // Sample table
+            if (sample.Count > 0)
+            {
+                var table = new Table()
+                    .Title("Sample Exported Entries (most recent first)")
+                    .AddColumn("[bold]Time[/]")
+                    .AddColumn("[bold]Level[/]")
+                    .AddColumn("[bold]Message[/]")
+                    .Border(TableBorder.Rounded);
+
+                foreach (var entry in sample)
+                {
+                    table.AddRow(
+                        entry.Timestamp.ToLocalTime().ToString("HH:mm:ss.fff"),
+                        LevelMarkup(entry.Level),
+                        Markup.Escape(entry.RenderedMessage));
+                }
+
+                AnsiConsole.Write(table);
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            AnsiConsole.MarkupLine($"[yellow]Warning:[/] {Markup.Escape(ex.Message)}");
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.WriteException(ex);
+        }
     }
+
+    private static string LevelMarkup(Microsoft.Extensions.Logging.LogLevel level) => level switch
+    {
+        Microsoft.Extensions.Logging.LogLevel.Trace => "[grey]Trace[/]",
+        Microsoft.Extensions.Logging.LogLevel.Debug => "[grey]Debug[/]",
+        Microsoft.Extensions.Logging.LogLevel.Information => "[green]Info[/]",
+        Microsoft.Extensions.Logging.LogLevel.Warning => "[yellow]Warn[/]",
+        Microsoft.Extensions.Logging.LogLevel.Error => "[red bold]Error[/]",
+        Microsoft.Extensions.Logging.LogLevel.Critical => "[red bold on white]CRIT[/]",
+        _ => Markup.Escape(level.ToString())
+    };
 }

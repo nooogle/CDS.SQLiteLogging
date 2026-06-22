@@ -1,82 +1,201 @@
 using CDS.SQLiteLogging;
 using Microsoft.Extensions.Logging;
+using Spectre.Console;
 using System.Diagnostics;
 
 namespace ConsoleTest.DIWriterDemos;
 
 /// <summary>
-/// Provides soak testing capabilities for the SqliteLogger.
+/// Runs a long-running soak test that adds log entries at a fixed rate and
+/// displays live performance statistics.
 /// </summary>
 class LoggerSoakTest
 {
     private readonly ILogger logger;
     private readonly ISQLiteWriterUtilities loggerUtilities;
     private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-    private readonly List<long> addTimesMs = new List<long>();
+    private readonly List<long> addTimesMs = [];
     private readonly Stopwatch stopwatchTotal = new Stopwatch();
     private readonly object lockObject = new object();
     private int totalEntriesAdded;
     private int entriesPerSecond;
     private long minAddTimeMs = long.MaxValue;
-    private long maxAddTimeMs = 0;
-    private long totalAddTimeMs = 0;
+    private long maxAddTimeMs;
+    private long totalAddTimeMs;
     private int lastHousekeepingDeletedCount;
     private long lastDbFileSizeBytes;
-    private int metricsTickCount;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LoggerSoakTest"/> class.
     /// </summary>
-    /// <param name="folder">The folder where the logs will be stored.</param>
-    /// <param name="entriesPerSecond">The number of log entries to add per second.</param>
     public LoggerSoakTest(ILogger<LoggerSoakTest> logger, ISQLiteWriterUtilities loggerUtilities)
     {
         this.logger = logger;
         this.loggerUtilities = loggerUtilities;
     }
 
-
     /// <summary>
-    /// Runs the soak test until canceled.
+    /// Runs the soak test until the user presses a key.
     /// </summary>
     public void Run()
     {
-        // Display header
-        Console.Clear();
-        Console.WriteLine("==== SQLite Logger Soak Test ====");
-        Console.WriteLine();
-        Console.Write("Enter entries per second (default 10): ");
-        string rateInput = Console.ReadLine() ?? string.Empty;
-        entriesPerSecond = string.IsNullOrWhiteSpace(rateInput) ? 10 : int.Parse(rateInput);
+        AnsiConsole.Write(new Rule("[bold yellow]SQLite Logger Soak Test[/]").LeftJustified());
 
+        entriesPerSecond = AnsiConsole.Prompt(
+            new TextPrompt<int>("Entries per second:")
+                .DefaultValue(10)
+                .Validate(v => v > 0
+                    ? ValidationResult.Success()
+                    : ValidationResult.Error("[red]Must be > 0[/]")));
 
-        Console.WriteLine("Starting soak test. Press any key to stop...");
-        Console.WriteLine($"Adding {entriesPerSecond} log entries per second");
-        Console.WriteLine("Housekeeping runs every 30 seconds (uses current HouseKeepingOptions).");
-        Console.WriteLine("Performing a short warm-up before metrics begin...");
-        Console.WriteLine();
+        AnsiConsole.MarkupLine("[grey]Housekeeping runs every 30 s  |  Press any key to stop[/]\n");
 
-        // Start the test in a background thread
         Task.Run(() => RunTestAsync(cancellationTokenSource.Token));
 
-        // Start the metrics reporter in another thread
-        Task.Run(() => ReportMetricsAsync(cancellationTokenSource.Token));
+        // Live display — runs on the main thread, polls every second for key press
+        var statsTable = BuildStatsTable();
+        var hkTimer = Stopwatch.StartNew();
 
-        // Wait for a key press to stop the test
-        Console.ReadKey(true);
-        cancellationTokenSource.Cancel();
+        AnsiConsole.Live(statsTable)
+            .AutoClear(false)
+            .Overflow(VerticalOverflow.Ellipsis)
+            .Start(ctx =>
+            {
+                while (!cancellationTokenSource.IsCancellationRequested)
+                {
+                    if (Console.KeyAvailable)
+                    {
+                        Console.ReadKey(true);
+                        cancellationTokenSource.Cancel();
+                        break;
+                    }
 
-        // Give time for graceful shutdown
-        Thread.Sleep(1000);
+                    if (hkTimer.Elapsed.TotalSeconds >= 30)
+                    {
+                        lastHousekeepingDeletedCount = loggerUtilities.ExecuteHousekeeping();
+                        lastDbFileSizeBytes = loggerUtilities.GetDatabaseFileSize();
+                        hkTimer.Restart();
+                    }
 
-        // Display final statistics
+                    RefreshStatsTable(statsTable);
+                    ctx.Refresh();
+                    Thread.Sleep(1000);
+                }
+            });
+
+        // Grace period for the background test task to finish flushing
+        Thread.Sleep(1200);
+
         DisplayFinalStatistics();
     }
 
-    /// <summary>
-    /// Runs the actual test, adding log entries at the specified rate.
-    /// </summary>
-    /// <param name="cancellationToken">Token to monitor for cancellation.</param>
+    private Table BuildStatsTable()
+    {
+        return new Table()
+            .Title("[bold yellow]Live Statistics[/]")
+            .AddColumn("[bold]Metric[/]")
+            .AddColumn(new TableColumn("[bold]Value[/]").RightAligned())
+            .Border(TableBorder.Rounded);
+    }
+
+    private void RefreshStatsTable(Table table)
+    {
+        int entriesAdded;
+        long pendingEntries, discardedEntries, min, max;
+        double avgTime;
+        (double p50, double p90, double p99) percentiles;
+
+        lock (lockObject)
+        {
+            entriesAdded = totalEntriesAdded;
+            pendingEntries = loggerUtilities.PendingEntriesCount;
+            discardedEntries = loggerUtilities.DiscardedEntriesCount;
+            avgTime = totalEntriesAdded > 0 ? (double)totalAddTimeMs / totalEntriesAdded : 0;
+            min = minAddTimeMs == long.MaxValue ? 0 : minAddTimeMs;
+            max = maxAddTimeMs;
+            percentiles = CalculatePercentiles();
+        }
+
+        var elapsed = stopwatchTotal.Elapsed;
+        var throughput = elapsed.TotalSeconds > 0 ? entriesAdded / elapsed.TotalSeconds : 0;
+
+        table.Rows.Clear();
+        table.AddRow("[bold]Running time[/]", elapsed.ToString(@"hh\:mm\:ss"));
+        table.AddRow("[bold]Entries added[/]", $"{entriesAdded:N0} ({throughput:N1}/sec)");
+        table.AddRow("[bold]Pending in cache[/]", $"{pendingEntries:N0}");
+        table.AddRow("[bold]Discarded[/]", discardedEntries > 0 ? $"[yellow]{discardedEntries:N0}[/]" : "0");
+        table.AddRow("[bold]DB file size[/]", $"{lastDbFileSizeBytes / 1024.0 / 1024.0:N2} MB");
+        table.AddRow("[bold]Last HK deleted[/]", $"{lastHousekeepingDeletedCount:N0}");
+        table.AddRow(string.Empty, string.Empty);
+        table.AddRow("[bold]Min add time[/]", $"{min} ms");
+        table.AddRow("[bold]Max add time[/]", $"{max} ms");
+        table.AddRow("[bold]Avg add time[/]", $"{avgTime:N2} ms");
+        table.AddRow("[bold]P50[/]", $"{percentiles.p50:N0} ms");
+        table.AddRow("[bold]P90[/]", $"{percentiles.p90:N0} ms");
+        table.AddRow("[bold]P99[/]", $"{percentiles.p99:N0} ms");
+    }
+
+    private void DisplayFinalStatistics()
+    {
+        AnsiConsole.Write(new Rule("[bold yellow]Final Results[/]").LeftJustified());
+
+        var elapsed = stopwatchTotal.Elapsed;
+        int entriesAdded;
+        long discardedEntries, min, max;
+        double avgTime, stdDev = 0;
+        (double p50, double p90, double p99) percentiles;
+
+        lock (lockObject)
+        {
+            entriesAdded = totalEntriesAdded;
+            discardedEntries = loggerUtilities.DiscardedEntriesCount;
+            avgTime = totalEntriesAdded > 0 ? (double)totalAddTimeMs / totalEntriesAdded : 0;
+            min = minAddTimeMs == long.MaxValue ? 0 : minAddTimeMs;
+            max = maxAddTimeMs;
+            percentiles = CalculatePercentiles();
+
+            if (addTimesMs.Count > 0)
+            {
+                double mean = addTimesMs.Average();
+                stdDev = Math.Sqrt(addTimesMs.Sum(t => Math.Pow(t - mean, 2)) / addTimesMs.Count);
+            }
+        }
+
+        var throughput = elapsed.TotalSeconds > 0 ? entriesAdded / elapsed.TotalSeconds : 0;
+
+        var table = new Table()
+            .AddColumn("[bold]Metric[/]")
+            .AddColumn(new TableColumn("[bold]Value[/]").RightAligned())
+            .Border(TableBorder.Rounded);
+
+        table.AddRow("Test duration", elapsed.ToString(@"hh\:mm\:ss"));
+        table.AddRow("Total entries added", $"{entriesAdded:N0}");
+        table.AddRow("Discarded entries", discardedEntries > 0 ? $"[yellow]{discardedEntries:N0}[/]" : "[green]0[/]");
+        table.AddRow("Average throughput", $"{throughput:N2} entries/sec");
+        table.AddRow(string.Empty, string.Empty);
+        table.AddRow("Min add time", $"{min} ms");
+        table.AddRow("Max add time", $"{max} ms");
+        table.AddRow("Avg add time", $"{avgTime:N2} ms");
+        table.AddRow("Std deviation", $"{stdDev:N2} ms");
+        table.AddRow("P50 (median)", $"{percentiles.p50:N0} ms");
+        table.AddRow("P90", $"{percentiles.p90:N0} ms");
+        table.AddRow("P99", $"{percentiles.p99:N0} ms");
+
+        AnsiConsole.Write(table);
+    }
+
+    private (double p50, double p90, double p99) CalculatePercentiles()
+    {
+        if (addTimesMs.Count == 0) { return (0, 0, 0); }
+
+        var sorted = new List<long>(addTimesMs);
+        sorted.Sort();
+        return (
+            sorted[(int)(sorted.Count * 0.50)],
+            sorted[(int)(sorted.Count * 0.90)],
+            sorted[(int)(sorted.Count * 0.99)]);
+    }
+
     private async Task RunTestAsync(CancellationToken cancellationToken)
     {
         int counter = 0;
@@ -89,233 +208,63 @@ class LoggerSoakTest
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                // Add entries for this second
                 for (int i = 0; i < entriesPerSecond && !cancellationToken.IsCancellationRequested; i++)
                 {
                     counter++;
-                    await AddLogEntryWithTimingAsync(counter);
+                    AddLogEntryWithTiming(counter);
                 }
 
-                // Wait until the next second if we finished early
-                await Task.Delay(1000, cancellationToken).ContinueWith(t => { });
+                await Task.Delay(1000, cancellationToken).ContinueWith(_ => { });
             }
         }
-        catch (TaskCanceledException)
-        {
-            // Expected during cancellation
-        }
+        catch (TaskCanceledException) { }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error during test: {ex.Message}");
+            AnsiConsole.MarkupLine($"[red]Error during test:[/] {Markup.Escape(ex.Message)}");
         }
         finally
         {
             stopwatchTotal.Stop();
 
-            // Ensure pending entries are flushed
             try
             {
                 await loggerUtilities.WaitUntilCacheIsEmptyAsync(timeout: TimeSpan.FromSeconds(10));
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error flushing logs: {ex.Message}");
+                AnsiConsole.MarkupLine($"[red]Error flushing logs:[/] {Markup.Escape(ex.Message)}");
             }
         }
     }
 
-    /// <summary>
-    /// Performs a small warm-up so JIT compilation and initial database setup are less likely to skew the first measured log entry timings.
-    /// </summary>
-    /// <param name="cancellationToken">Token to monitor for cancellation.</param>
     private async Task WarmUpAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-
-        logger.LogInformation("Warm-up log entry for soak test metrics.");
-
-        // Wait for the warm-up entry to be flushed so the measured run starts after the initial JIT and SQLite startup work.
+        logger.LogInformation("Warm-up log entry for soak test.");
         await loggerUtilities.WaitUntilCacheIsEmptyAsync(timeout: TimeSpan.FromSeconds(10));
     }
 
-    /// <summary>
-    /// Adds a log entry and measures the time taken.
-    /// </summary>
-    /// <param name="counter">The sequence number for this entry.</param>
-    private Task AddLogEntryWithTimingAsync(int counter)
+    private void AddLogEntryWithTiming(int counter)
     {
-        var stopwatch = Stopwatch.StartNew();
+        var sw = Stopwatch.StartNew();
 
-        var logLevel = counter % 3 == 0 ? LogLevel.Warning :
-                      counter % 7 == 0 ? LogLevel.Error :
-                      LogLevel.Information;
+        var level = counter % 3 == 0 ? LogLevel.Warning :
+                    counter % 7 == 0 ? LogLevel.Error :
+                    LogLevel.Information;
 
-        logger.Log(
-            logLevel,
+        logger.Log(level,
             message: "Image with illumination {illumination} has result {result}.",
             args: [MsgParamsGen.GetIllumination(), MsgParamsGen.GetResult()]);
 
-
-        stopwatch.Stop();
-        long elapsedMs = stopwatch.ElapsedMilliseconds;
+        sw.Stop();
 
         lock (lockObject)
         {
             totalEntriesAdded++;
-            totalAddTimeMs += elapsedMs;
-            minAddTimeMs = Math.Min(minAddTimeMs, elapsedMs);
-            maxAddTimeMs = Math.Max(maxAddTimeMs, elapsedMs);
-            addTimesMs.Add(elapsedMs);
+            totalAddTimeMs += sw.ElapsedMilliseconds;
+            minAddTimeMs = Math.Min(minAddTimeMs, sw.ElapsedMilliseconds);
+            maxAddTimeMs = Math.Max(maxAddTimeMs, sw.ElapsedMilliseconds);
+            addTimesMs.Add(sw.ElapsedMilliseconds);
         }
-
-        return Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Reports metrics periodically during the test.
-    /// </summary>
-    /// <param name="cancellationToken">Token to monitor for cancellation.</param>
-    private async Task ReportMetricsAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                // Report every 5 seconds
-                await Task.Delay(5000, cancellationToken);
-
-                // Run housekeeping every 30 seconds (every 6th metrics tick)
-                metricsTickCount++;
-                if (metricsTickCount % 6 == 0)
-                {
-                    lastHousekeepingDeletedCount = loggerUtilities.ExecuteHousekeeping();
-                    lastDbFileSizeBytes = loggerUtilities.GetDatabaseFileSize();
-                }
-
-                DisplayCurrentStatistics();
-            }
-        }
-        catch (TaskCanceledException)
-        {
-            // Expected during cancellation
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error reporting metrics: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Displays current statistics for the test.
-    /// </summary>
-    private void DisplayCurrentStatistics()
-    {
-        long pendingEntries;
-        long discardedEntries;
-        int entriesAdded;
-        double avgTime;
-        long min, max;
-        double p50, p90, p99;
-
-        lock (lockObject)
-        {
-            entriesAdded = totalEntriesAdded;
-            pendingEntries = loggerUtilities.PendingEntriesCount;
-            discardedEntries = loggerUtilities.DiscardedEntriesCount;
-            avgTime = totalEntriesAdded > 0 ? (double)totalAddTimeMs / totalEntriesAdded : 0;
-            min = minAddTimeMs == long.MaxValue ? 0 : minAddTimeMs;
-            max = maxAddTimeMs;
-
-            // Calculate percentiles
-            if (addTimesMs.Count > 0)
-            {
-                var sortedTimes = new List<long>(addTimesMs);
-                sortedTimes.Sort();
-                p50 = sortedTimes[(int)(sortedTimes.Count * 0.5)];
-                p90 = sortedTimes[(int)(sortedTimes.Count * 0.9)];
-                p99 = sortedTimes[(int)(sortedTimes.Count * 0.99)];
-            }
-            else
-            {
-                p50 = p90 = p99 = 0;
-            }
-        }
-
-        var elapsedTime = stopwatchTotal.Elapsed;
-        var entriesPerSecond = elapsedTime.TotalSeconds > 0 ? entriesAdded / elapsedTime.TotalSeconds : 0;
-
-        Console.Clear();
-        Console.WriteLine("==== SQLite Logger Soak Test ====");
-        Console.WriteLine($"Running for: {elapsedTime:hh\\:mm\\:ss}");
-        Console.WriteLine($"Entries added: {entriesAdded:N0} ({entriesPerSecond:N2}/sec)");
-        Console.WriteLine($"Entries pending in cache: {pendingEntries:N0}, discarded entry count: {discardedEntries:N0}");
-        Console.WriteLine($"DB file size: {lastDbFileSizeBytes / 1024.0 / 1024.0:N1} MB  |  Last housekeeping deleted: {lastHousekeepingDeletedCount:N0} rows");
-        Console.WriteLine();
-        Console.WriteLine("Log Entry Add Performance:");
-        Console.WriteLine($"  Min: {min} ms");
-        Console.WriteLine($"  Max: {max} ms");
-        Console.WriteLine($"  Avg: {avgTime:N2} ms");
-        Console.WriteLine($"  P50: {p50} ms");
-        Console.WriteLine($"  P90: {p90} ms");
-        Console.WriteLine($"  P99: {p99} ms");
-        Console.WriteLine();
-        Console.WriteLine("Press any key to stop the test...");
-    }
-
-    /// <summary>
-    /// Displays final statistics after the test completes.
-    /// </summary>
-    private void DisplayFinalStatistics()
-    {
-        Console.Clear();
-        Console.WriteLine("==== SQLite Logger Soak Test Results ====");
-
-        var elapsedTime = stopwatchTotal.Elapsed;
-        int entriesAdded;
-        long discardedEntries;
-        double avgTime;
-        long min, max;
-        double p50 = 0, p90 = 0, p99 = 0; // Initialize with default values
-
-        lock (lockObject)
-        {
-            entriesAdded = totalEntriesAdded;
-            discardedEntries = loggerUtilities.DiscardedEntriesCount;
-            avgTime = totalEntriesAdded > 0 ? (double)totalAddTimeMs / totalEntriesAdded : 0;
-            min = minAddTimeMs == long.MaxValue ? 0 : minAddTimeMs;
-            max = maxAddTimeMs;
-
-            // Calculate percentiles only if we have data
-            if (addTimesMs.Count > 0)
-            {
-                var sortedTimes = new List<long>(addTimesMs);
-                sortedTimes.Sort();
-                p50 = sortedTimes[(int)(sortedTimes.Count * 0.5)];
-                p90 = sortedTimes[(int)(sortedTimes.Count * 0.9)];
-                p99 = sortedTimes[(int)(sortedTimes.Count * 0.99)];
-
-                // Calculate standard deviation
-                double mean = sortedTimes.Average();
-                double sumOfSquares = sortedTimes.Sum(time => Math.Pow(time - mean, 2));
-                double stdDev = Math.Sqrt(sumOfSquares / sortedTimes.Count);
-                Console.WriteLine($"Standard Deviation: {stdDev:N2} ms");
-            }
-        }
-
-        var entriesPerSecond = elapsedTime.TotalSeconds > 0 ? entriesAdded / elapsedTime.TotalSeconds : 0;
-
-        Console.WriteLine($"Test duration: {elapsedTime:hh\\:mm\\:ss}");
-        Console.WriteLine($"Total entries added: {entriesAdded:N0}");
-        Console.WriteLine($"Total entries discarded: {discardedEntries:N0}");
-        Console.WriteLine($"Average throughput: {entriesPerSecond:N2} entries/second");
-        Console.WriteLine();
-        Console.WriteLine("Log Entry Add Performance:");
-        Console.WriteLine($"  Minimum time: {min} ms");
-        Console.WriteLine($"  Maximum time: {max} ms");
-        Console.WriteLine($"  Average time: {avgTime:N2} ms");
-        Console.WriteLine($"  Median (P50): {p50} ms");
-        Console.WriteLine($"  90th percentile: {p90} ms");
-        Console.WriteLine($"  99th percentile: {p99} ms");
-        Console.WriteLine();
     }
 }

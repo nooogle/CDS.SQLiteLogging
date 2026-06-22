@@ -1,20 +1,18 @@
-﻿using ConsoleTest.HousekeeperDemos;
+using ConsoleTest.HousekeeperDemos;
 
 namespace ConsoleTest.MiscDemos.HousekeeperDemos;
 
 /// <summary>
-/// Menu for running the demos.
+/// Menu for housekeeping demos.
 /// </summary>
 static class Menu
 {
     /// <summary>
-    /// Runs the main program logic.
+    /// Runs the housekeeping demos sub-menu.
     /// </summary>
     public static void Run()
     {
-        new CDS.CLIMenus.Basic.MenuBuilder("Housekeeping")
-            .AddItem("Delete all", () => new DeleteAllDemo().Run())
-            .Build()
-            .Run();
+        SpectreMenu.Run("Housekeeping Demos",
+            ("Delete all entries", () => new DeleteAllDemo().Run()));
     }
 }

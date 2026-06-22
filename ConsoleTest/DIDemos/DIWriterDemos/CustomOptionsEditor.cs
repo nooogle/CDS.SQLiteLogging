@@ -1,95 +1,85 @@
-﻿using CDS.SQLiteLogging;
+using CDS.SQLiteLogging;
+using Spectre.Console;
 
 namespace ConsoleTest.DIWriterDemos;
 
 /// <summary>
-/// Contains methods for getting custom options from the user.
+/// Interactive editor for batching and housekeeping options using Spectre.Console prompts.
 /// </summary>
 static class CustomOptionsEditor
 {
     /// <summary>
-    /// Gets the batching options from the user.
+    /// Prompts the user to edit batching options and returns the updated values.
     /// </summary>
-    /// <returns>The configured <see cref="BatchingOptions"/>.</returns>
-    public static BatchingOptions GetBatchingOptions(BatchingOptions batchingOptions)
+    public static BatchingOptions GetBatchingOptions(BatchingOptions current)
     {
-        // Display existing options
-        Console.WriteLine("Current batching options:");
-        Console.WriteLine($"Batch size: {batchingOptions.BatchSize}");
-        Console.WriteLine($"Cache size: {batchingOptions.MaxCacheSize}");
-        Console.WriteLine($"Flush interval: {batchingOptions.FlushInterval}");
-        Console.WriteLine();
+        AnsiConsole.Write(new Rule("[bold yellow]Batching Options[/]").LeftJustified());
 
-        // Ask user for the batch size
-        Console.Write("Enter the batch size: ");
-        if (!int.TryParse(Console.ReadLine(), out int batchSize) || batchSize <= 0)
-        {
-            Console.WriteLine("Invalid batch size.");
-            return batchingOptions;
-        }
+        var currentGrid = new Grid().AddColumn(new GridColumn().NoWrap()).AddColumn();
+        currentGrid.AddRow("[bold]Batch size:[/]", $"{current.BatchSize}");
+        currentGrid.AddRow("[bold]Max cache size:[/]", $"{current.MaxCacheSize}");
+        currentGrid.AddRow("[bold]Flush interval:[/]", $"{current.FlushInterval}");
+        AnsiConsole.Write(new Panel(currentGrid).Header("[grey]Current[/]").Border(BoxBorder.Rounded));
 
-        // Ask user for the cache size
-        Console.Write("Enter the cache size: ");
-        if (!int.TryParse(Console.ReadLine(), out int cacheSize) || cacheSize <= 0)
-        {
-            Console.WriteLine("Invalid cache size.");
-            return batchingOptions;
-        }
+        var batchSize = AnsiConsole.Prompt(
+            new TextPrompt<int>("New [yellow]batch size[/]:")
+                .DefaultValue(current.BatchSize)
+                .Validate(v => v > 0
+                    ? ValidationResult.Success()
+                    : ValidationResult.Error("[red]Must be > 0[/]")));
 
-        // Ask user for the flush interval in seconds
-        Console.Write("Enter the flush interval in seconds: ");
-        if (!int.TryParse(Console.ReadLine(), out int flushIntervalSeconds) || flushIntervalSeconds <= 0)
-        {
-            Console.WriteLine("Invalid flush interval.");
-            return batchingOptions;
-        }
+        var cacheSize = AnsiConsole.Prompt(
+            new TextPrompt<int>("New [yellow]max cache size[/]:")
+                .DefaultValue(current.MaxCacheSize)
+                .Validate(v => v > 0
+                    ? ValidationResult.Success()
+                    : ValidationResult.Error("[red]Must be > 0[/]")));
 
-        // Setup batching options
-        batchingOptions = new()
+        var flushSecs = AnsiConsole.Prompt(
+            new TextPrompt<int>("New [yellow]flush interval[/] (seconds):")
+                .DefaultValue((int)current.FlushInterval.TotalSeconds)
+                .Validate(v => v > 0
+                    ? ValidationResult.Success()
+                    : ValidationResult.Error("[red]Must be > 0[/]")));
+
+        return new BatchingOptions
         {
             BatchSize = batchSize,
             MaxCacheSize = cacheSize,
-            FlushInterval = TimeSpan.FromSeconds(flushIntervalSeconds)
+            FlushInterval = TimeSpan.FromSeconds(flushSecs)
         };
-
-        return batchingOptions;
     }
 
     /// <summary>
-    /// Gets the housekeeping options from the user.
+    /// Prompts the user to edit housekeeping options and returns the updated values.
     /// </summary>
-    /// <returns>The configured <see cref="HouseKeepingOptions"/>.</returns>
-    public static HouseKeepingOptions GetHouseKeepingOptions(HouseKeepingOptions houseKeepingOptions)
+    public static HouseKeepingOptions GetHouseKeepingOptions(HouseKeepingOptions current)
     {
-        // Display existing options
-        Console.WriteLine("Current housekeeping options:");
-        Console.WriteLine($"Retention period: {houseKeepingOptions.RetentionPeriod}");
-        Console.WriteLine($"Cleanup interval: {houseKeepingOptions.CleanupInterval}");
-        Console.WriteLine();
+        AnsiConsole.Write(new Rule("[bold yellow]Housekeeping Options[/]").LeftJustified());
 
-        // Ask user for the retention period in days
-        Console.Write("Enter the retention period in days: ");
-        if (!int.TryParse(Console.ReadLine(), out int retentionDays) || retentionDays <= 0)
-        {
-            Console.WriteLine("Invalid retention period.");
-            return houseKeepingOptions;
-        }
+        var currentGrid = new Grid().AddColumn(new GridColumn().NoWrap()).AddColumn();
+        currentGrid.AddRow("[bold]Retention period:[/]", $"{current.RetentionPeriod.TotalDays:N0} days");
+        currentGrid.AddRow("[bold]Cleanup interval:[/]", $"{current.CleanupInterval.TotalHours:N0} hours");
+        AnsiConsole.Write(new Panel(currentGrid).Header("[grey]Current[/]").Border(BoxBorder.Rounded));
 
-        // Ask user for the cleanup interval in hours
-        Console.Write("Enter the cleanup interval in hours: ");
-        if (!int.TryParse(Console.ReadLine(), out int cleanupIntervalHours) || cleanupIntervalHours <= 0)
-        {
-            Console.WriteLine("Invalid cleanup interval.");
-            return houseKeepingOptions;
-        }
+        var retentionDays = AnsiConsole.Prompt(
+            new TextPrompt<int>("New [yellow]retention period[/] (days):")
+                .DefaultValue((int)current.RetentionPeriod.TotalDays)
+                .Validate(v => v > 0
+                    ? ValidationResult.Success()
+                    : ValidationResult.Error("[red]Must be > 0[/]")));
 
-        // Setup housekeeping options
-        houseKeepingOptions = new()
+        var cleanupHours = AnsiConsole.Prompt(
+            new TextPrompt<int>("New [yellow]cleanup interval[/] (hours):")
+                .DefaultValue((int)current.CleanupInterval.TotalHours)
+                .Validate(v => v > 0
+                    ? ValidationResult.Success()
+                    : ValidationResult.Error("[red]Must be > 0[/]")));
+
+        return new HouseKeepingOptions
         {
             RetentionPeriod = TimeSpan.FromDays(retentionDays),
-            CleanupInterval = TimeSpan.FromHours(cleanupIntervalHours),
+            CleanupInterval = TimeSpan.FromHours(cleanupHours),
         };
-
-        return houseKeepingOptions;
     }
 }

@@ -1,20 +1,18 @@
-﻿namespace ConsoleTest.DIDemos;
+namespace ConsoleTest.DIDemos;
 
 /// <summary>
-/// Menu for running SQLite logging demos without dependency injection.
+/// Menu for dependency-injection logging demos.
 /// </summary>
 static class Menu
 {
     /// <summary>
-    /// Runs the main program logic by setting up a logger and presenting demo options.
+    /// Runs the DI demos sub-menu.
     /// </summary>
     public static void Run()
     {
-        new CDS.CLIMenus.Basic.MenuBuilder("Dependency injection demos")
-            .AddItem("Middleware demo", DIMiddlewareDemo.DemoRunner.Run)
-            .AddItem("Simple demo", DISimplestDemo.DemoRunner.Run)
-            .AddItem("Assorted writer demos", () => new DIWriterDemos.Menu().Run())
-            .Build()
-            .Run();
+        SpectreMenu.Run("Dependency Injection Demos",
+            ("Middleware demo", DIMiddlewareDemo.DemoRunner.Run),
+            ("Simplest DI demo", DISimplestDemo.DemoRunner.Run),
+            ("Assorted writer demos", () => new DIWriterDemos.Menu().Run()));
     }
 }
