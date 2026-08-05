@@ -70,4 +70,4 @@ From `CONTRIBUTING.md`:
 
 ## Versioning & Release
 
-Uses [MinVer](https://github.com/adamralph/minver) — version is derived automatically from git tags (e.g., `git tag v2.5.0`). Tagging triggers the GitHub Actions release workflow to build, test, pack, and publish to NuGet.
+Uses [MinVer](https://github.com/adamralph/minver) with an uppercase `V` tag prefix — version is derived automatically from git tags (e.g., `git tag V2.5.0`). Tagging triggers the GitHub Actions release workflow to build, test, pack, and publish to NuGet.
