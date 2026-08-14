@@ -60,8 +60,11 @@ class ConnectionManager : IDisposable
     /// </param>
     private ConnectionManager(string fileName, DatabaseOptions databaseOptions, bool readOnly)
     {
-        var folderPath = Path.GetDirectoryName(fileName) ?? string.Empty;
-        Directory.CreateDirectory(folderPath);
+        var folderPath = Path.GetDirectoryName(fileName);
+        if (!string.IsNullOrEmpty(folderPath))
+        {
+            Directory.CreateDirectory(folderPath);
+        }
 
         this.fileName = fileName;
         this.databaseOptions = databaseOptions ?? throw new ArgumentNullException(nameof(databaseOptions));

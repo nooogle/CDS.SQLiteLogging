@@ -229,10 +229,26 @@ public class Housekeeper : IDisposable
         });
 
         // Reclaim space; serialized through the semaphore so it doesn't race with
-        // concurrent reads or writes on the same connection.
+        // concurrent reads or writes on the same connection. VACUUM requires an exclusive lock,
+        // so it can still throw Busy/Locked if another process (e.g. a live WAL writer) holds the
+        // database - skip it rather than letting that break the housekeeping cycle; the deleted
+        // rows above are already committed regardless.
         if (totalDeletedCount > 0)
         {
-            connectionManager.ExecuteNonQueryGuarded("VACUUM");
+            try
+            {
+                connectionManager.ExecuteNonQueryGuarded("VACUUM");
+            }
+#if NET6_0_OR_GREATER
+            catch (SqliteException ex) when ((Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Busy ||
+                                             (Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Locked)
+#else
+            catch (SqliteException ex) when (ex.ResultCode == SqliteErrorCode.Busy ||
+                                             ex.ResultCode == SqliteErrorCode.Locked)
+#endif
+            {
+                System.Diagnostics.Debug.WriteLine($"Skipping VACUUM because the database is busy/locked: {ex.Message}");
+            }
         }
 
         return totalDeletedCount;
