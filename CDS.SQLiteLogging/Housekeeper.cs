@@ -24,10 +24,81 @@ public class Housekeeper : IDisposable
         string dbPath,
         HouseKeepingOptions options,
         IDateTimeProvider dateTimeProvider) : this(
-            new ConnectionManager(dbPath),
+            dbPath,
+            options,
+            new DatabaseOptions(),
+            dateTimeProvider)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Housekeeper"/> class.
+    /// </summary>
+    /// <param name="dbPath">The path to the SQLite database file.</param>
+    /// <param name="options">The housekeeping configuration options.</param>
+    /// <param name="databaseOptions">
+    /// The SQLite database options to apply to the connection. Pass the same options used by the
+    /// process that writes to this database (for example <see cref="SqliteJournalMode.Wal"/>) to
+    /// avoid forcing a journal-mode change - which requires exclusive access and throws while that
+    /// writer is still connected - back to the library default of <see cref="SqliteJournalMode.Delete"/>.
+    /// </param>
+    /// <param name="dateTimeProvider">The date time provider.</param>
+    public Housekeeper(
+        string dbPath,
+        HouseKeepingOptions options,
+        DatabaseOptions databaseOptions,
+        IDateTimeProvider dateTimeProvider) : this(
+            new ConnectionManager(dbPath, databaseOptions),
             options,
             dateTimeProvider)
     {
+    }
+
+    /// <summary>
+    /// Tests whether the database at <paramref name="dbPath"/> can currently be opened for writing,
+    /// without making any changes. Use this to detect up front whether write operations (such as
+    /// constructing a <see cref="Housekeeper"/> that changes journal mode, or deleting entries) are
+    /// likely to succeed - for example before enabling delete UI in a viewer application.
+    /// </summary>
+    /// <param name="dbPath">The path to the SQLite database file.</param>
+    /// <returns>
+    /// <see langword="true"/> if a write lock could be acquired and immediately released;
+    /// <see langword="false"/> if the file does not exist or is currently locked by another connection.
+    /// </returns>
+    public static bool CanOpenForWrite(string dbPath)
+    {
+        if (!File.Exists(dbPath)) { return false; }
+
+        try
+        {
+            using var connection = new SqliteConnection($"Data Source={dbPath}");
+            connection.Open();
+
+            // BEGIN IMMEDIATE acquires the write lock straight away (unlike a plain/deferred BEGIN,
+            // which only acquires it on the first write statement), so this either throws immediately
+            // if another connection already holds it, or succeeds and is rolled back with no changes made.
+            using (var beginCmd = new SqliteCommand("BEGIN IMMEDIATE;", connection))
+            {
+                beginCmd.ExecuteNonQuery();
+            }
+
+            using (var rollbackCmd = new SqliteCommand("ROLLBACK;", connection))
+            {
+                rollbackCmd.ExecuteNonQuery();
+            }
+
+            return true;
+        }
+#if NET6_0_OR_GREATER
+        catch (SqliteException ex) when ((Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Busy ||
+                                         (Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Locked)
+#else
+        catch (SqliteException ex) when (ex.ResultCode == SqliteErrorCode.Busy ||
+                                         ex.ResultCode == SqliteErrorCode.Locked)
+#endif
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -158,10 +229,26 @@ public class Housekeeper : IDisposable
         });
 
         // Reclaim space; serialized through the semaphore so it doesn't race with
-        // concurrent reads or writes on the same connection.
+        // concurrent reads or writes on the same connection. VACUUM requires an exclusive lock,
+        // so it can still throw Busy/Locked if another process (e.g. a live WAL writer) holds the
+        // database - skip it rather than letting that break the housekeeping cycle; the deleted
+        // rows above are already committed regardless.
         if (totalDeletedCount > 0)
         {
-            connectionManager.ExecuteNonQueryGuarded("VACUUM");
+            try
+            {
+                connectionManager.ExecuteNonQueryGuarded("VACUUM");
+            }
+#if NET6_0_OR_GREATER
+            catch (SqliteException ex) when ((Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Busy ||
+                                             (Internal.SqliteErrorCode)ex.SqliteErrorCode == Internal.SqliteErrorCode.Locked)
+#else
+            catch (SqliteException ex) when (ex.ResultCode == SqliteErrorCode.Busy ||
+                                             ex.ResultCode == SqliteErrorCode.Locked)
+#endif
+            {
+                System.Diagnostics.Debug.WriteLine($"Skipping VACUUM because the database is busy/locked: {ex.Message}");
+            }
         }
 
         return totalDeletedCount;

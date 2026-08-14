@@ -12,6 +12,7 @@ class ConnectionManager : IDisposable
     private readonly string fileName;
     private readonly SqliteConnection connection;
     private readonly DatabaseOptions databaseOptions;
+    private readonly bool readOnly;
     private bool disposed;
     private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
 
@@ -26,33 +27,77 @@ class ConnectionManager : IDisposable
     }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="ConnectionManager"/> class, opened read-only.
+    /// A read-only connection never issues the journal-mode/synchronous-mode PRAGMAs, so it cannot
+    /// be blocked by - or interfere with - another process that already has the database open
+    /// (for example a live WAL writer).
+    /// </summary>
+    /// <param name="fileName">The name of the SQLite database file.</param>
+    /// <param name="readOnly">Must be <see langword="true"/>; selects this overload.</param>
+    public ConnectionManager(string fileName, bool readOnly)
+        : this(fileName, new DatabaseOptions(), readOnly)
+    {
+    }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="ConnectionManager"/> class.
     /// </summary>
     /// <param name="fileName">The name of the SQLite database file.</param>
     /// <param name="databaseOptions">The SQLite database options to apply to the connection.</param>
     public ConnectionManager(string fileName, DatabaseOptions databaseOptions)
+        : this(fileName, databaseOptions, readOnly: false)
     {
-        var folderPath = Path.GetDirectoryName(fileName) ?? string.Empty;
-        Directory.CreateDirectory(folderPath);
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ConnectionManager"/> class.
+    /// </summary>
+    /// <param name="fileName">The name of the SQLite database file.</param>
+    /// <param name="databaseOptions">The SQLite database options to apply to the connection. Ignored when <paramref name="readOnly"/> is <see langword="true"/>.</param>
+    /// <param name="readOnly">
+    /// When <see langword="true"/>, the connection is opened read-only and the journal-mode/synchronous-mode
+    /// PRAGMAs are not applied, so opening never requires exclusive access to the database.
+    /// </param>
+    private ConnectionManager(string fileName, DatabaseOptions databaseOptions, bool readOnly)
+    {
+        var folderPath = Path.GetDirectoryName(fileName);
+        if (!string.IsNullOrEmpty(folderPath))
+        {
+            Directory.CreateDirectory(folderPath);
+        }
 
         this.fileName = fileName;
         this.databaseOptions = databaseOptions ?? throw new ArgumentNullException(nameof(databaseOptions));
-        connection = CreateDbConnection(this.fileName);
+        this.readOnly = readOnly;
+        connection = CreateDbConnection(this.fileName, readOnly);
         connection.Open();
-        ConfigureConnectionDefaults();
+
+        // Changing journal mode requires exclusive access to the database and would throw while
+        // another process (e.g. a live WAL writer) is connected. A read-only connection has no
+        // write access to make this change anyway, so skip it and use whatever mode is already set.
+        if (!readOnly)
+        {
+            ConfigureConnectionDefaults();
+        }
     }
 
 
 #if NET6_0_OR_GREATER
-    private SqliteConnection CreateDbConnection(string dbPath)
+    private SqliteConnection CreateDbConnection(string dbPath, bool readOnly)
     {
-        var connection = new SqliteConnection($"Data Source={dbPath}");
+        var connectionString = readOnly
+            ? $"Data Source={dbPath};Mode=ReadOnly;"
+            : $"Data Source={dbPath}";
+        var connection = new SqliteConnection(connectionString);
         return connection;
     }
 #else
-    private SqliteConnection CreateDbConnection(string dbPath)
+    private SqliteConnection CreateDbConnection(string dbPath, bool readOnly)
     {
-        var connection = new SqliteConnection($"Data Source={dbPath};Version=3;");
+        var connectionString = readOnly
+            ? $"Data Source={dbPath};Version=3;Read Only=True;"
+            : $"Data Source={dbPath};Version=3;";
+        var connection = new SqliteConnection(connectionString);
         return connection;
     }
 #endif

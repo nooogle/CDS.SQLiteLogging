@@ -28,40 +28,57 @@ The project uses [MinVer](https://github.com/adamralph/minver) for automatic sem
 ### Version Format
 
 Follow [Semantic Versioning](https://semver.org/):
-- `v{MAJOR}.{MINOR}.{PATCH}` (for example `v2.5.0`, `v2.5.1`)
+- `V{MAJOR}.{MINOR}.{PATCH}` (for example `V2.5.0`, `V2.5.1`) — the leading `V` is required; it's
+  configured via `MinVerTagPrefix` in `Directory.Build.props`, and a lowercase `v` tag will not be
+  recognized by MinVer
 
 **When to increment:**
 - **MAJOR**: Breaking API changes
 - **MINOR**: New features (backward compatible)
 - **PATCH**: Bug fixes (backward compatible)
 
+### Branch Protection
+
+`master` is protected (see `.github/workflows` hardening and the repo's Branches settings):
+
+- Direct pushes to `master` are rejected, including for admins — all changes land via a pull request.
+- **0 approvals are required**, so as the sole maintainer you can merge your own PR — you just need the required status checks to go green first.
+- Required checks: `Build Core Library & Test` (ubuntu-latest / windows-latest / macos-latest) and `Build Windows Projects`.
+- Force-pushes and branch deletion are blocked.
+
+This does **not** affect tagging: pushing a `V*.*.*` tag (step 5 below) works exactly as before, since branch protection only governs the `master` branch ref, not tags.
+
 ### Step-by-Step Release Process
 
-1. **Ensure all changes are committed and pushed**
+1. **Push your changes on a branch and open a PR into `master`**
    ```bash
-   git status
-   git push origin master
+   git checkout -b prep-v2.5.0
+   git push -u origin prep-v2.5.0
+   gh pr create --base master --fill
    ```
 
-2. **Wait for CI to pass**
+2. **Wait for the required checks to pass, then merge the PR**
    - Check: https://github.com/nooogle/CDS.SQLiteLogging/actions
-   - Ensure the package build and tests pass
+   - No second reviewer is needed — merge it yourself once it's green:
+     ```bash
+     gh pr merge --merge
+     ```
 
 3. **Update any relevant docs**
    - Update `README.md` if public usage changed
    - Update workflow or setup docs if release behavior changed
+   - (Include these doc updates in the same PR as step 1 where practical, rather than a separate round-trip)
 
-4. **Commit the release preparation**
+4. **Pull the merged `master` locally**
    ```bash
-   git add .
-   git commit -m "Prepare v2.5.0 release"
-   git push origin master
+   git checkout master
+   git pull origin master
    ```
 
 5. **Create and push the version tag**
    ```bash
-   git tag v2.5.0
-   git push origin v2.5.0
+   git tag V2.5.0
+   git push origin V2.5.0
    ```
 
 6. **GitHub Actions will automatically:**
@@ -83,16 +100,16 @@ For pre-release versions (alpha, beta, RC):
 
 ```bash
 # Create a tag with pre-release identifier
-git tag v2.5.0-alpha.1
-git push origin v2.5.0-alpha.1
+git tag V2.5.0-alpha.1
+git push origin V2.5.0-alpha.1
 
 # Or
-git tag v2.5.0-beta.1
-git push origin v2.5.0-beta.1
+git tag V2.5.0-beta.1
+git push origin V2.5.0-beta.1
 
 # Or
-git tag v2.5.0-rc.1
-git push origin v2.5.0-rc.1
+git tag V2.5.0-rc.1
+git push origin V2.5.0-rc.1
 ```
 
 MinVer will automatically mark these as pre-release versions in NuGet.
@@ -153,7 +170,7 @@ dotnet build CDS.SQLiteLogging/CDS.SQLiteLogging.csproj --verbosity normal
 ### Version is not what you expected
 - MinVer calculates version from git tags
 - Ensure you've fetched all tags: `git fetch --tags`
-- Check tag format follows `v{major}.{minor}.{patch}`
+- Check tag format follows `V{major}.{minor}.{patch}` (uppercase `V`)
 - View all tags: `git tag -l`
 
 ### Tests fail during release

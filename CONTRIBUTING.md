@@ -84,18 +84,22 @@ This project follows the guidelines in `.github/copilot-instructions.md`:
 
 This project uses [MinVer](https://github.com/adamralph/minver) for automatic semantic versioning based on git tags:
 
-- Version is derived from git tags (for example `v2.5.0`)
-- Tag format: `v{major}.{minor}.{patch}`
+- Version is derived from git tags (for example `V2.5.0`)
+- Tag format: `V{major}.{minor}.{patch}` — uppercase `V`, configured via `MinVerTagPrefix` in `Directory.Build.props`
 - Maintainers create tags for releases
 
 ## Release Process
 
+`master` is protected — changes land via a pull request with required checks passing (see [RELEASE.md](RELEASE.md#branch-protection) for the exact policy). Once your changes are merged to `master`:
+
 1. Update any relevant docs such as `README.md` or automation guidance when needed
-2. Create and push a version tag: `git tag v2.5.0 && git push origin v2.5.0`
+2. Create and push a version tag: `git tag V2.5.0 && git push origin V2.5.0`
 3. GitHub Actions automatically:
    - Builds and tests the package project
    - Creates a GitHub release with generated notes
    - Publishes the NuGet package
+
+See [RELEASE.md](RELEASE.md) for the full step-by-step process.
 
 ## Questions?
 

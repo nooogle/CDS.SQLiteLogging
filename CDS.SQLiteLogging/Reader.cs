@@ -29,7 +29,10 @@ public class Reader : IDisposable
             throw new FileNotFoundException($"Database file not found: {dbPath}");
         }
 
-        connectionManager = new ConnectionManager(dbPath);
+        // Opened read-only: a Reader never writes, and a read-only connection never has to
+        // change the database's journal/synchronous mode PRAGMAs, so it can't be blocked by -
+        // or interfere with - a writer that already has the database open (e.g. in WAL mode).
+        connectionManager = new ConnectionManager(dbPath, readOnly: true);
         tableName = Internal.DatabaseSchema.Tables.LogEntry;
     }
 
