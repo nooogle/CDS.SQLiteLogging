@@ -54,7 +54,7 @@ Status badge:
 Workflow: `.github/workflows/release.yml`
 
 Triggers:
-- Push of tags matching `v*.*.*`
+- Push of tags matching `V*.*.*` (uppercase `V`, per `MinVerTagPrefix` in `Directory.Build.props`)
 - Manual runs
 
 What it does:

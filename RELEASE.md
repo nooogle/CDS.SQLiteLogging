@@ -28,7 +28,9 @@ The project uses [MinVer](https://github.com/adamralph/minver) for automatic sem
 ### Version Format
 
 Follow [Semantic Versioning](https://semver.org/):
-- `v{MAJOR}.{MINOR}.{PATCH}` (for example `v2.5.0`, `v2.5.1`)
+- `V{MAJOR}.{MINOR}.{PATCH}` (for example `V2.5.0`, `V2.5.1`) — the leading `V` is required; it's
+  configured via `MinVerTagPrefix` in `Directory.Build.props`, and a lowercase `v` tag will not be
+  recognized by MinVer
 
 **When to increment:**
 - **MAJOR**: Breaking API changes
@@ -75,8 +77,8 @@ This does **not** affect tagging: pushing a `V*.*.*` tag (step 5 below) works ex
 
 5. **Create and push the version tag**
    ```bash
-   git tag v2.5.0
-   git push origin v2.5.0
+   git tag V2.5.0
+   git push origin V2.5.0
    ```
 
 6. **GitHub Actions will automatically:**
@@ -98,16 +100,16 @@ For pre-release versions (alpha, beta, RC):
 
 ```bash
 # Create a tag with pre-release identifier
-git tag v2.5.0-alpha.1
-git push origin v2.5.0-alpha.1
+git tag V2.5.0-alpha.1
+git push origin V2.5.0-alpha.1
 
 # Or
-git tag v2.5.0-beta.1
-git push origin v2.5.0-beta.1
+git tag V2.5.0-beta.1
+git push origin V2.5.0-beta.1
 
 # Or
-git tag v2.5.0-rc.1
-git push origin v2.5.0-rc.1
+git tag V2.5.0-rc.1
+git push origin V2.5.0-rc.1
 ```
 
 MinVer will automatically mark these as pre-release versions in NuGet.
@@ -168,7 +170,7 @@ dotnet build CDS.SQLiteLogging/CDS.SQLiteLogging.csproj --verbosity normal
 ### Version is not what you expected
 - MinVer calculates version from git tags
 - Ensure you've fetched all tags: `git fetch --tags`
-- Check tag format follows `v{major}.{minor}.{patch}`
+- Check tag format follows `V{major}.{minor}.{patch}` (uppercase `V`)
 - View all tags: `git tag -l`
 
 ### Tests fail during release
