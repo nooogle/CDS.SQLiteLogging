@@ -16,3 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Stale references to `CDS.FluentHtmlReports` in copied workflow and repository docs
 - `Reader` could fail to open with `SQLite Error 5: 'database is locked'` whenever another process already had the database open (e.g. a live WAL writer). `Reader` now opens the connection read-only and no longer issues the journal-mode/synchronous-mode PRAGMAs, which previously required exclusive access it didn't actually need
+- `ConnectionManager` threw when constructed with a bare filename (no directory component), because `Directory.CreateDirectory("")` is invalid; directory creation is now skipped when there's no folder path to create
+- Housekeeping's `VACUUM` step could throw `SQLITE_BUSY`/`SQLITE_LOCKED` and abort the cleanup cycle if another process held the database (e.g. a live WAL writer); it's now skipped (with the already-committed deletes retained) instead of failing the whole cycle
+- `RELEASE.md`, `CONTRIBUTING.md`, and `.github/SETUP.md` documented lowercase `v*.*.*` release tags, which MinVer does not recognize (`MinVerTagPrefix` is configured as uppercase `V`); examples now match the actual required tag format
