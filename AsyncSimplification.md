@@ -143,4 +143,4 @@ Once callers have had adequate time to migrate (suggested: one minor version aft
 - Remove `Task DeleteByIdsAsync(long[] ids)` from `ISQLiteWriterUtilities` and `Housekeeper`.
 - Consider whether `WaitUntilCacheIsEmptyAsync` should be kept (it is genuinely async) or also
   removed if the call sites have all migrated to the sync version.
-- Update `CHANGELOG.md`, bump minor version.
+- Bump minor version.
