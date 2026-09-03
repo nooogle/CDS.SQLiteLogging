@@ -9,7 +9,7 @@ so the infrastructure is ready; what's missing is benchmarks of the log system i
 
 This gap became visible while fixing a concurrency bug in WALIS's log viewer (2026-08-14): `Reader`
 was forcing `PRAGMA journal_mode = DELETE` on every open, which threw `SQLITE_BUSY` whenever a live
-WAL writer already had the database open (see `CHANGELOG.md` → `[Unreleased]` → Fixed). The fix
+WAL writer already had the database open. The fix
 (read-only `Reader`, `Housekeeper.CanOpenForWrite`, a `DatabaseOptions` overload so callers can match
 a live writer's journal mode) was reasoned out from SQLite locking semantics and confirmed with a
 targeted regression test, not from measured throughput/latency data. We don't actually know, for
