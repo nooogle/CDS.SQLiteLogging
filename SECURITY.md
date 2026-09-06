@@ -1,21 +1,24 @@
 # Security Policy
 
-## Supported Versions
-
-| Version | Supported |
-|---------|-----------|
-| Latest  | ✅        |
-| Older   | ❌        |
-
 ## Reporting a Vulnerability
 
-Please **do not** open a public GitHub issue for security vulnerabilities.
+Please report security vulnerabilities by [opening a private security
+advisory](../../security/advisories/new) on this repository, or by emailing
+<jon@carpediemsystems.co.uk>. Do not open a public issue for a suspected
+vulnerability.
 
-Instead, report them privately via [GitHub's private vulnerability reporting](https://github.com/nooogle/CDS.SQLiteLogging/security/advisories/new).
+Please include what you have: a description of the issue and its likely
+impact, steps to reproduce or a proof-of-concept, and any mitigation you are
+aware of.
 
-Include as much detail as possible:
-- A description of the vulnerability and its potential impact
-- Steps to reproduce
-- Any suggested fixes
+**You will receive an acknowledgement within 7 days.** This is a
+solo-maintained project, so that is a commitment to reply — not to have a fix
+ready by then. Work on a confirmed vulnerability starts as soon as I am able,
+and I will keep you posted on progress.
 
-You can expect an acknowledgement within 48 hours and a resolution or mitigation plan within 14 days.
+If a fix is warranted you will be credited in the release notes, unless you
+would rather not be.
+
+## Supported Versions
+
+Only the latest published release is supported.
