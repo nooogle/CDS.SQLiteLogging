@@ -16,7 +16,11 @@ updates:
     ignore:
       - dependency-name: "Microsoft.Extensions.*"
         update-types: [ "version-update:semver-major" ]
-      - dependency-name: "System.*"
+      # Named, not "System.*": that glob would also match the third-party
+      # System.Data.SQLite, which does not version with the runtime.
+      - dependency-name: "System.Collections.Immutable"
+        update-types: [ "version-update:semver-major" ]
+      - dependency-name: "System.Reflection.Metadata"
         update-types: [ "version-update:semver-major" ]
       - dependency-name: "Microsoft.Bcl.*"
         update-types: [ "version-update:semver-major" ]
